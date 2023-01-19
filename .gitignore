@@ -1,5 +1,8 @@
 # Data
 data
 
-# Jupyter Notebook
+# Jupyter Notebook related stuff
 .ipynb_checkpoints
+
+# vscode related stuff
+.vscode
