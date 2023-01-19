@@ -1,0 +1,7 @@
+name: microbusiness
+channels:
+  - defaults
+dependencies:
+  - python=3.10.0
+  - jupyterlab
+prefix: /home/siderealyear/anaconda3/envs/microbusiness
