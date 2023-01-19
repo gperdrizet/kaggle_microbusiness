@@ -4,4 +4,5 @@ channels:
 dependencies:
   - python=3.10.0
   - jupyterlab
+  - tensorflow-gpu
 prefix: /home/siderealyear/anaconda3/envs/microbusiness
