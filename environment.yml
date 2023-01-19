@@ -6,4 +6,5 @@ dependencies:
   - jupyterlab
   - tensorflow-gpu
   - kaggle
+  - pandas
 prefix: /home/siderealyear/anaconda3/envs/microbusiness
