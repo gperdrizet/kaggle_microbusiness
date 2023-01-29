@@ -1,8 +1,9 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 def two_panel_histogram(
-        data: 'list[float]',
+        data: pd.Series,
         main_title: str,
         linear_plot_x_label: str,
         log10_plot_x_label: str,
@@ -27,8 +28,8 @@ def two_panel_histogram(
     return plt
 
 def timeseries_lag_two_panel_plot(
-    timeseries_x_data: list,
-    timeseries_y_data: 'list[float]',
+    timeseries_x_data: pd.Series,
+    timeseries_y_data: pd.Series,
     main_title: str,
     timeseries_y_label: str,
     timeseries_x_label = 'timepoints',
@@ -57,8 +58,8 @@ def timeseries_lag_two_panel_plot(
     return plt
 
 def timeseries_percentage_two_panel_plot(
-    timeseries_x_data: list,
-    timeseries_y_data: 'list[float]',
+    timeseries_x_data: pd.Series,
+    timeseries_y_data: pd.Series,
     main_title: str,
     timeseries_y_label: str,
     timeseries_x_label = 'timepoints',
