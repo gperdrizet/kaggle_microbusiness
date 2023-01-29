@@ -7,4 +7,6 @@ dependencies:
   - tensorflow-gpu
   - kaggle
   - pandas
+  - matplotlib
+  - numpy
 prefix: /home/siderealyear/anaconda3/envs/microbusiness
