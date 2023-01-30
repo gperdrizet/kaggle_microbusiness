@@ -9,4 +9,5 @@ dependencies:
   - pandas
   - matplotlib
   - numpy
+  - statsmodels
 prefix: /home/siderealyear/anaconda3/envs/microbusiness
