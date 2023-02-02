@@ -10,4 +10,13 @@ PROJECT_NAME = 'godaddy-microbusiness-density-forecasting'
 PROJECT_ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Data related files & paths
-DATA_PATH = f'{PROJECT_ROOT_PATH}/data/'
+DATA_PATH = f'{PROJECT_ROOT_PATH}/data'
+
+# Contest submission files
+SUBMISSIONS_PATH = f'{DATA_PATH}/submissions'
+
+# Leaderboard scoring test submission files
+LEADERBOARD_TEST_PATH = f'{SUBMISSIONS_PATH}/leaderboard_test'
+
+# Baseline benchmarking submission files
+BENCHMARKING_PATH = f'{SUBMISSIONS_PATH}/benchmarking'
