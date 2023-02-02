@@ -171,3 +171,86 @@ def n_by_n_regression_plot(
     plt.tight_layout()
 
     return plt
+
+def n_by_n_prediction_scatterplot(
+    input_data: pd.DataFrame,
+    predictions: pd.DataFrame,
+    x_variable: str = 'timepoint_num',
+    y_variable: str = 'microbusiness_density',
+    xlabel: str = 'Timepoint number',
+    ylabel: str = 'Microbusiness density',
+    cfips_list: list = [],
+    rows: int = 1,
+    columns: int = 1,
+    main_title: str = 'Microbusiness density timeseries',
+    fig_width: int = 10,
+    fig_height: int = 10,
+    set_const_ylims: bool = False
+):
+    # Set common y-axis limits for all plots if desired
+    if set_const_ylims == True:
+        
+        # Pool all of the y data we are going to plot
+        data_pool = []
+
+        for cfips in cfips_list:
+            data_pool.extend(input_data[input_data['cfips'] == cfips][y_variable].to_list())
+            data_pool.extend(predictions[predictions['cfips'] == cfips][y_variable].to_list())
+        
+        # Find min and max values from data pool
+        ymin = min(data_pool)
+        ymax = max(data_pool)
+
+    # Count plots
+    plot_num = 0
+
+    # Initialize figure
+    fig, ax = plt.subplots(rows, columns, figsize=(fig_width,fig_height))
+
+    # Loop first on rows, then on columns
+    for j in range(rows):
+        for i in range(columns):
+
+            # Plot if we have not run out of counties
+            if plot_num < len(cfips_list):
+
+                # Get input data for this county
+                data = input_data[input_data['cfips'] == cfips_list[plot_num]]
+
+                # Assign x and y from variable parameters
+                x_input = data[x_variable]
+                y_input = data[y_variable]
+
+                # Plot
+                ax[j,i].scatter(x_input, y_input) # type: ignore
+
+                # Get prediction data for this county
+                data = predictions[predictions['cfips'] == cfips_list[plot_num]]
+
+                # Assign x and y from variable parameters
+                x_predicted = data[x_variable]
+                y_predicted = data[y_variable]
+
+                # Plot
+                ax[j,i].scatter(x_predicted, y_predicted) # type: ignore
+
+                # Set axis labels
+                ax[j,i].set_xlabel(xlabel) # type: ignore
+                ax[j,i].set_ylabel(ylabel) # type: ignore
+
+                # Set constant y axis limits, if desired
+                if set_const_ylims == True:
+                    ax[j,i].set_ylim(ymin, ymax) # type: ignore
+
+                # If x axis is date, rotate tick labels and change font size
+                if type(x_input.iloc[0]) == pd._libs.tslibs.timestamps.Timestamp: # type: ignore
+                    ax[j,i].set_xticks(ax[j,i].get_xticks()) # type: ignore
+                    ax[j,i].set_xticklabels(ax[j,i].get_xticklabels(), rotation=45, fontsize=8) # type: ignore
+
+            plot_num += 1
+
+    # Finish up plot
+    plt.suptitle(main_title)
+    plt.tight_layout()
+
+    return plt
