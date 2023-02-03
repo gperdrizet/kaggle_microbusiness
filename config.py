@@ -11,6 +11,7 @@ PROJECT_ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Data related files & paths
 DATA_PATH = f'{PROJECT_ROOT_PATH}/data'
+PARSED_DATA_PATH = f'{DATA_PATH}/parsed_data'
 
 # Contest submission files
 SUBMISSIONS_PATH = f'{DATA_PATH}/submissions'
