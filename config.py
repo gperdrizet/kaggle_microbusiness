@@ -10,4 +10,20 @@ PROJECT_NAME = 'godaddy-microbusiness-density-forecasting'
 PROJECT_ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Data related files & paths
-DATA_PATH = f'{PROJECT_ROOT_PATH}/data/'
+DATA_PATH = f'{PROJECT_ROOT_PATH}/data'
+
+# Data input from Kaggle and/or other sources
+DATA_SOURCES_PATH = f'{DATA_PATH}/data_sources'
+KAGGLE_DATA_PATH = f'{DATA_SOURCES_PATH}/kaggle'
+
+# Parsed/formatted data for benchmarking, training and cross validation
+PARSED_DATA_PATH = f'{DATA_PATH}/parsed_data'
+
+# Contest submission files
+SUBMISSIONS_PATH = f'{DATA_PATH}/submissions'
+
+# Leaderboard scoring test submission files
+LEADERBOARD_TEST_PATH = f'{SUBMISSIONS_PATH}/leaderboard_test'
+
+# Baseline benchmarking submission files
+BENCHMARKING_PATH = f'{SUBMISSIONS_PATH}/benchmarking'
