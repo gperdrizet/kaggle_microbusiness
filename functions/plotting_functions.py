@@ -112,7 +112,9 @@ def n_by_n_regression_plot(
     rows: int = 1,
     columns: int = 1,
     main_title: str = 'Microbusiness density timeseries regression',
-    set_const_ylims: bool = False
+    set_const_ylims: bool = False,
+    add_regression_line: bool = False,
+    add_regression_stats: bool = False
 ):
     # Set common y-axis limits for all plots if desired
     if set_const_ylims == True:
@@ -124,9 +126,13 @@ def n_by_n_regression_plot(
         ymin = min(data_pool)
         ymax = max(data_pool)
 
+    # Get plot dimensions based on number of rows and columns
+    plot_width = columns * 3
+    plot_height = rows * 3
+
     plot_num = 0
 
-    fig, ax = plt.subplots(rows, columns, figsize=(10,10))
+    fig, ax = plt.subplots(rows, columns, figsize=(plot_width,plot_height))
 
     for j in range(rows):
         for i in range(columns):
@@ -138,32 +144,39 @@ def n_by_n_regression_plot(
                 y = data[y_variable]
 
                 ax[j,i].scatter(x, y) # type: ignore
+                
+                if add_regression_line == True:
+                    result = sm.OLS(y, sm.add_constant(x)).fit()
+                    abline_plot(model_results=result, ax=ax[j,i]) # type: ignore
 
-                result = sm.OLS(y, sm.add_constant(x)).fit()
-
-                abline_plot(model_results=result, ax=ax[j,i]) # type: ignore
-
-                coeff = result.params[1]
-                rsquared = result.rsquared
-                pvalue = result.pvalues[1]
-
-
-                ax[j,i].set_xlabel(xlabel) # type: ignore
-                ax[j,i].set_ylabel(ylabel) # type: ignore
-
-                ax[j,i].text( # type: ignore
-                    0.05,
-                    0.95, 
-                    f'm: {coeff:.1e}\nR$^2$: {rsquared:.2f}\np: {pvalue:.1e}', 
-                    horizontalalignment='left', 
-                    verticalalignment='top', 
-                    transform=ax[j,i].transAxes, # type: ignore
-                    bbox = dict(facecolor = 'lightgrey', alpha = 1),
-                    fontsize = 8
-                )
+                if add_regression_stats == True:
+                    result = sm.OLS(y, sm.add_constant(x)).fit()
+                    
+                    coeff = result.params[1]
+                    rsquared = result.rsquared
+                    pvalue = result.pvalues[1]
+                
+                    ax[j,i].text( # type: ignore
+                        0.05,
+                        0.95, 
+                        f'm: {coeff:.1e}\nR$^2$: {rsquared:.2f}\np: {pvalue:.1e}', 
+                        horizontalalignment='left', 
+                        verticalalignment='top', 
+                        transform=ax[j,i].transAxes, # type: ignore
+                        bbox = dict(facecolor = 'lightgrey', alpha = 1),
+                        fontsize = 8
+                    )
 
                 if set_const_ylims == True:
                     ax[j,i].set_ylim(ymin, ymax) # type: ignore
+
+                # If x axis is date, rotate tick labels and change font size
+                if type(x.iloc[0]) == pd._libs.tslibs.timestamps.Timestamp: # type: ignore
+                    ax[j,i].set_xticks(ax[j,i].get_xticks()) # type: ignore
+                    ax[j,i].set_xticklabels(ax[j,i].get_xticklabels(), rotation=45, fontsize=8) # type: ignore
+
+                ax[j,i].set_xlabel(xlabel) # type: ignore
+                ax[j,i].set_ylabel(ylabel) # type: ignore
 
             plot_num += 1
 
