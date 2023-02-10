@@ -101,6 +101,34 @@ def naive_model_smape_score(sample):
 
     return one_point_smape_score, four_point_smape_score
 
+def naive_model_smape_score_2(sample, scored_timepoints):
+    one_point_smape_values = []
+    four_point_smape_values = []
+
+    # Score only the first n timepoints from the sample
+    for block in sample[:scored_timepoints]:
+
+        # Get the last microbusiness_density value from the input block
+        # and use this as our constant forecast
+        forecast_value = block[0,-1,2]
+
+        # Get the target values
+        actual_values = block[1,0:,2]
+
+        # Score the predictions
+        smape_values = []
+
+        for actual_value in actual_values:
+            smape_values.append(two_point_smape(actual_value, forecast_value))
+
+        one_point_smape_values.append(smape_values[0])
+        four_point_smape_values.extend(smape_values)
+
+    one_point_smape_score = (100/len(one_point_smape_values)) * sum(one_point_smape_values)
+    four_point_smape_score = (100/len(four_point_smape_values)) * sum(four_point_smape_values)
+
+    return one_point_smape_score, four_point_smape_score
+
 def crossvalidation_smape(parsed_data, folds, training_fraction):
     '''Generates random training-validation split, forecasts and calculates SMAPE score
     folds number of times, returns dict of SMAPE scores for forecast horizon of one and four'''
@@ -151,6 +179,31 @@ def parallel_crossvalidation_smape(parsed_data, training_fraction):
     # Forecast on and score training and validation subsets
     one_point_training_smape, four_point_training_smape = naive_model_smape_score(training_sample)
     one_point_validation_smape, four_point_validation_smape = naive_model_smape_score(validation_sample)
+
+    # Collect scores
+    result = [
+        one_point_training_smape,
+        one_point_validation_smape,
+        four_point_training_smape,
+        four_point_validation_smape
+    ]
+
+    return result
+
+def parallel_crossvalidation_smape_2(parsed_data, training_fraction, scored_timepoints):
+    '''Parallelized on CPUs over folds
+    Generates random training-validation split, forecasts and calculates SMAPE score
+    folds number of times, returns dict of SMAPE scores for forecast horizon of one and four'''
+
+    # Get random training and validation samples
+    training_sample, validation_sample = sample_parsed_data(
+        parsed_data,
+        training_fraction
+    )
+
+    # Forecast on and score training and validation subsets
+    one_point_training_smape, four_point_training_smape = naive_model_smape_score_2(training_sample, scored_timepoints)
+    one_point_validation_smape, four_point_validation_smape = naive_model_smape_score_2(validation_sample, scored_timepoints)
 
     # Collect scores
     result = [
