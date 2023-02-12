@@ -253,20 +253,25 @@ def cleanup_bootstrapping_multiprocessing_pool(pool, result_objects):
     results = [result.get() for result in result_objects]
 
     # Holder for parsed sample results
-    smape_values = {
+    data = {
         'sample': [],
         'model_type': [],
         'model_order': [],
-        'model_SMAPE_values': [],
-        'model_detrended_SMAPE_values': [] 
+        'SMAPE_values': [],
+        'detrended_SMAPE_values': [],
+        'MBD_predictions': [],
+        'detrended_MBD_predictions': [],
+        'MBD_inputs': [],
+        'detrended_MBD_inputs': [],
+        'MBD_actual': []
     }
 
     for result in results:
         for key, value in result.items():
-            smape_values[key].extend(value)
+            data[key].extend(value)
 
     # Clean up
     pool.close()
     pool.join()
 
-    return smape_values
+    return data
