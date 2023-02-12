@@ -246,3 +246,27 @@ def cleanup_multiprocessing_pool(pool, result_objects):
     pool.join()
 
     return smape_scores_df
+
+def cleanup_bootstrapping_multiprocessing_pool(pool, result_objects):
+
+    # Collect results
+    results = [result.get() for result in result_objects]
+
+    # Holder for parsed sample results
+    smape_values = {
+        'sample': [],
+        'model_type': [],
+        'model_order': [],
+        'model_SMAPE_values': [],
+        'model_detrended_SMAPE_values': [] 
+    }
+
+    for result in results:
+        for key, value in result.items():
+            smape_values[key].extend(value)
+
+    # Clean up
+    pool.close()
+    pool.join()
+
+    return smape_values
