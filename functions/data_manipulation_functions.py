@@ -3,6 +3,8 @@ import pandas as pd
 import statsmodels.api as sm
 import multiprocessing as mp
 
+from scipy import stats
+
 def build_OLS_data(data, model_order):
 
     # Sort each county by timepoint and take the first n (most recent) rows from each county
@@ -25,6 +27,17 @@ def OLS_prediction(data, xinput, yinput, xforecast):
 
     model = sm.OLS(data[yinput], sm.add_constant(data[xinput])).fit()
     predictions = model.predict(sm.add_constant(xforecast))
+
+    return predictions
+
+def seigel_prediction(data, xinput, yinput, xforecast):
+
+    ss = stats.siegelslopes(data[yinput], data[xinput])
+
+    predictions = []
+
+    for x in xforecast:
+        predictions.append(ss[1] + ss[0] * x)
 
     return predictions
 
