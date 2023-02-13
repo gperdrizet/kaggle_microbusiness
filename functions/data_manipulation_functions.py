@@ -30,7 +30,7 @@ def OLS_prediction(data, xinput, yinput, xforecast):
 
     return predictions
 
-def seigel_prediction(data, xinput, yinput, xforecast):
+def siegel_prediction(data, xinput, yinput, xforecast):
 
     ss = stats.siegelslopes(data[yinput], data[xinput])
 
