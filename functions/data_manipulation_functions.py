@@ -41,6 +41,18 @@ def siegel_prediction(data, xinput, yinput, xforecast):
 
     return predictions
 
+def ts_prediction(data, xinput, yinput, xforecast):
+
+    # Fit Theil-Sen to raw data
+    ts = stats.theilslopes(data[yinput], data[xinput])
+
+    predictions = []
+
+    for x in xforecast:
+        predictions.append(ts[1] + ts[0] * x)
+
+    return predictions
+
 def sample_parsed_data(
     parsed_data,
     training_fraction      
