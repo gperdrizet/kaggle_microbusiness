@@ -15,7 +15,7 @@ LOG_LEVEL = logging.INFO
 LOG_ROTATION_FREQUENCY = 'h'
 LOG_BACKUP_COUNT = 24
 LOG_FORMAT = '%(asctime)s:%(name)s:%(levelname)s - %(message)s'
-LOG_DIR = f'{BASE_DIR}/logs/'
+LOG_DIR = f'{PROJECT_ROOT_PATH}/logs/'
 #DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
 # Data related files & paths
