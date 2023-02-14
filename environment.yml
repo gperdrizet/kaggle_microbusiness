@@ -12,3 +12,4 @@ dependencies:
   - statsmodels
   - seaborn
   - scikit-learn
+  - multiprocessing-logging
