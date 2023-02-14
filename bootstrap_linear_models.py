@@ -35,9 +35,9 @@ timepoints = np.load(output_file)
 # print(f'Example block:\n{timepoints[0,0,0:,]}')
 
 # Set run parameters
-num_samples = 180
-sample_size = 1500
-model_orders = [10,12,14,16,32]
+num_samples = 18
+sample_size = 3
+model_orders = [4]
 model_types = ['OLS', 'TS', 'Seigel', 'Ridge']
 time_fit = False
 
@@ -63,3 +63,6 @@ for sample_num in range(num_samples):
 
 # Get and parse result objects, clean up pool
 data = parallel_funcs.cleanup_bootstrapping_multiprocessing_pool(pool, result_objects)
+
+for key, value in data.items():
+    print(f'{key}: {value}')
