@@ -1,68 +1,65 @@
-# Add parent directory to path to allow import of config.py
-import sys
-sys.path.append('..')
 import config as conf
 import functions.initialization_functions as init_funcs
-import functions.data_manipulation_functions as data_funcs
 import functions.parallelization_functions as parallel_funcs
 
-# import time
+import logging
 import numpy as np
-# import pandas as pd
-# import statsmodels.api as sm
-# from scipy import stats
-# from sklearn.linear_model import Ridge
+import pandas as pd
 
-# print(f'Python: {sys.version}')
-# print()
-# print(f'Numpy {np.__version__}')
-# print(f'Pandas {pd.__version__}')
+if __name__ == '__main__':
 
-# Load parsed data
-block_size = 5
+    paths = conf.DataFilePaths()
+    params = conf.LinearModelsBootstrappingParameters()
 
-output_file = f'{conf.DATA_PATH}/parsed_data/structured_bootstrap_blocksize{block_size}.npy'
-timepoints = np.load(output_file)
-
-# print(f'Timepoints shape: {timepoints.shape}')
-# print()
-# print('Column types:')
-
-# for column in timepoints[0,0,0,0:]:
-#     print(f'\t{type(column)}')
-
-# print()
-# print(f'Example block:\n{timepoints[0,0,0:,]}')
-
-# Set run parameters
-num_samples = 18
-sample_size = 3
-model_orders = [4]
-model_types = ['OLS', 'TS', 'Seigel', 'Ridge']
-time_fit = False
-
-# Fire up the pool
-pool, result_objects = parallel_funcs.start_multiprocessing_pool()
-
-# Loop on samples, assigning each to a different worker
-for sample_num in range(num_samples):
-
-    result = pool.apply_async(parallel_funcs.parallel_bootstrapped_smape,
-        args = (
-            timepoints, 
-            sample_num, 
-            sample_size, 
-            model_orders, 
-            model_types,
-            time_fit
-        )
+    logger = init_funcs.start_logger(
+        logfile = f'{paths.LOG_DIR}/{params.log_file_name}',
+        logstart_msg = 'Starting bootstrapping run'
     )
 
-    # Add result to collection
-    result_objects.append(result)
+    # Block size used for parsed data loading needs to be 
+    # the largest model model order plus one for the forecast
+    block_size = max(params.model_orders) + 1
 
-# Get and parse result objects, clean up pool
-data = parallel_funcs.cleanup_bootstrapping_multiprocessing_pool(pool, result_objects)
+    # Load parsed data
+    input_file = f'{paths.PARSED_DATA_PATH}/{params.input_file_root_name}{block_size}.npy'
+    timepoints = np.load(input_file)
 
-for key, value in data.items():
-    print(f'{key}: {value}')
+    logging.info(f'Input timepoints shape: {timepoints.shape}')
+    logging.info('')
+    logging.info('Input column types:')
+
+    for column in timepoints[0,0,0,0:]:
+        logging.info(f'\t{type(column)}')
+
+    logging.info('')
+    logging.info(f'Example input block:\n{timepoints[0,0,0:,]}')
+
+    # Fire up the pool
+    pool, result_objects = parallel_funcs.start_multiprocessing_pool()
+
+    # Loop on samples, assigning each to a different worker
+    for sample_num in range(params.num_samples):
+
+        result = pool.apply_async(parallel_funcs.parallel_bootstrapped_smape,
+            args = (
+                timepoints, 
+                sample_num, 
+                params.sample_size, 
+                params.model_orders, 
+                params.model_types,
+                params.time_fits
+            )
+        )
+
+        # Add result to collection
+        result_objects.append(result)
+
+    # Get and parse result objects, clean up pool
+    data = parallel_funcs.cleanup_bootstrapping_multiprocessing_pool(pool, result_objects)
+
+    # Convert result to Pandas DataFrame
+    data_df = pd.DataFrame(data)
+
+    # Persist to disk as HDF5
+    output_file = f'{paths.BOOTSTRAPPING_RESULTS_PATH}/{params.output_file_root_name}.h5'
+    data_df.to_hdf(output_file, key='data', mode='w')

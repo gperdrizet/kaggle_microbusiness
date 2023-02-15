@@ -3,6 +3,7 @@ import sys
 sys.path.append('..')
 import functions.bootstrapping_functions as bootstrap_funcs
 
+import logging
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
@@ -11,7 +12,7 @@ def start_multiprocessing_pool():
     # Instantiate multiprocessing pool to parallelize over folds
     n_cpus = mp.cpu_count() - 2
 
-    print(f'Starting processes for {n_cpus} CPUs (available - 2)')
+    logging.info(f'Starting processes for {n_cpus} CPUs (available - 2)')
 
     pool = mp.Pool(processes = n_cpus)
 

@@ -1,4 +1,5 @@
 import time
+import logging
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
@@ -231,6 +232,8 @@ def smape_score_models(sample, model_types, model_order, time_fit = False):
     return block_data
 
 def bootstrap_smape_scores(timepoints, sample_num, sample_size, model_order, model_types, time_fit = False):
+
+    logging.debug(f'Worker {sample_num} starting bootstrap run.')
 
     # Holder for sample results
     sample_data = {
