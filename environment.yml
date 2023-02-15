@@ -13,3 +13,4 @@ dependencies:
   - seaborn
   - scikit-learn
   - multiprocessing-logging
+  - pytables
