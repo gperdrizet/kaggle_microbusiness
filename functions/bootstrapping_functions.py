@@ -86,6 +86,7 @@ def make_forecasts(block, model_types, model_order, time_fits = False):
     y_input = list(block[:model_order, 2])
     detrended_y_input = list(block[:model_order, 5])
 
+    # Add input data to results
     block_predictions['MBD_inputs'].append(y_input)
     block_predictions['detrended_MBD_inputs'].append(detrended_y_input)
 
@@ -111,10 +112,8 @@ def make_forecasts(block, model_types, model_order, time_fits = False):
 
     for model_type in model_types:
 
-        # Add model type to results
+        # Add model info. to results
         block_predictions['model_type'].append(model_type)
-
-        # Add model order to results
         block_predictions['model_order'].append(model_order)
 
         # Add input data to results
@@ -183,10 +182,8 @@ def make_forecasts(block, model_types, model_order, time_fits = False):
         # Stop fit timer, get total dT in seconds
         dT = time.time() - start_time
 
-        # Collect forecast
+        # Collect forecasts
         block_predictions['MBD_predictions'].append(model_prediction)
-
-        # Collect detrended model forecast
         block_predictions['detrended_MBD_predictions'].append(detrended_model_prediction)
 
         # Log model results for debug
@@ -205,7 +202,7 @@ def smape_score_models(
         model_types, 
         model_order, 
         time_fits = False
-    ):
+):
     '''Takes a sample of blocks, makes forecast for each 
     and collects resulting SMAPE values'''
 
@@ -232,7 +229,7 @@ def smape_score_models(
             block_data[key].extend(value)
 
         # Get the true value and add to data
-        actual_value = sample[block_num, (model_order - 1), 2]
+        actual_value = sample[block_num, model_order, 2]
 
         # Get and collect SMAPE value for models
         for value in block_predictions['MBD_predictions']:
