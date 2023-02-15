@@ -61,5 +61,5 @@ if __name__ == '__main__':
     data_df = pd.DataFrame(data)
 
     # Persist to disk as HDF5
-    output_file = f'{paths.BOOTSTRAPPING_RESULTS_PATH}/{params.output_file_root_name}.h5'
-    data_df.to_hdf(output_file, key='data', mode='w')
+    output_file = f'{paths.BOOTSTRAPPING_RESULTS_PATH}/{params.output_file_root_name}.parquet'
+    data_df.to_parquet(output_file)
