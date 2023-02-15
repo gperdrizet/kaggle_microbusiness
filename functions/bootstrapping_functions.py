@@ -50,7 +50,7 @@ def make_forecasts(block, model_types, model_order, time_fits = False):
     logging.debug(f'Input block:')
 
     for row in block[0:,]:
-        row = [f'{x:.2e}' for x in row]
+        row = [f'{x:.3e}' for x in row]
         logging.debug(f'{row}')
 
     logging.debug('')
@@ -71,7 +71,8 @@ def make_forecasts(block, model_types, model_order, time_fits = False):
     block_predictions['model_order'].append(model_order)
 
     control_prediction = block[(model_order - 1), 2]
-    detrended_control_prediction = block[(model_order - 1), 5] + block[model_order, 2]
+    detrended_control_change_prediction = block[(model_order - 1), 5]
+    detrended_control_prediction = detrended_control_change_prediction + block[(model_order - 1), 2]
 
     block_predictions['MBD_predictions'].append(control_prediction)
     block_predictions['detrended_MBD_predictions'].append(detrended_control_prediction)
@@ -103,113 +104,99 @@ def make_forecasts(block, model_types, model_order, time_fits = False):
 
     logging.debug(f'MDB - input: {formatted_y_input}, target: {true_y:.3f}')
     logging.debug(f'Detrended MBD - input: {formatted_detrended_y_input}, target: {true_detrended_y:.3f}')
-    logging.debug(f'Control prediction: {control_prediction:.2f}')
-    logging.debug(f'Detrended control prediction: {detrended_control_prediction:.2f}')
+    logging.debug('')
+    logging.debug(f'Control MBD prediction: {control_prediction:.3f}')
+    logging.debug(f'Control detrended MBD prediction: {detrended_control_change_prediction:.3f}')
+    logging.debug(f'Detrended control MBD prediction: {detrended_control_prediction:.3f}')
 
     for model_type in model_types:
 
+        # Add model type to results
+        block_predictions['model_type'].append(model_type)
+
+        # Add model order to results
+        block_predictions['model_order'].append(model_order)
+
+        # Add input data to results
+        block_predictions['MBD_inputs'].append(y_input)
+        block_predictions['detrended_MBD_inputs'].append(detrended_y_input)
+
+        # Set default values for outputs to NAN in case we have fits that fail
+        # for some reason
+        model_prediction = np.nan
+        detrended_model_prediction = np.nan
+        detrended_model_change_prediction = np.nan
+
+        # Start fit timer
         start_time = time.time()
 
         if model_type == 'OLS':
 
-            # Add model type to results
-            block_predictions['model_type'].append(model_type)
-
-            # Add model order to results
-            block_predictions['model_order'].append(model_order)
-
-            block_predictions['MBD_inputs'].append(y_input)
-            block_predictions['detrended_MBD_inputs'].append(detrended_y_input)
-
-            # Fit and predict raw data
+            # Fit and predict raw data with OLS
             model = sm.OLS(y_input, sm.add_constant(x_input)).fit()
-            prediction = model.predict(sm.add_constant(forecast_x))
+            model_predictions = model.predict(sm.add_constant(forecast_x))
+            model_prediction = model_predictions[0]
 
-            # Collect forecast
-            block_predictions['MBD_predictions'].append(prediction[0])
-
-            # Fit and predict detrended data
+            # Fit and predict detrended data with OLS
             model = sm.OLS(detrended_y_input, sm.add_constant(x_input)).fit()
-            prediction = model.predict(sm.add_constant(forecast_x))
-
-            # Collect forecast
-            block_predictions['detrended_MBD_predictions'].append(prediction[0] + block[model_order, 2])
+            detrended_model_change_predictions = model.predict(sm.add_constant(forecast_x))
+            detrended_model_change_prediction = detrended_model_change_predictions[0]
+            detrended_model_prediction = detrended_model_change_prediction + block[(model_order - 1), 2]
 
         if model_type == 'TS':
 
-            # Add model type to results
-            block_predictions['model_type'].append(model_type)
-
-            # Add model order to results
-            block_predictions['model_order'].append(model_order)
-
-            block_predictions['MBD_inputs'].append(y_input)
-            block_predictions['detrended_MBD_inputs'].append(detrended_y_input)
-
-            # Fit Theil-Sen to raw data
+            # Fit and predict raw data with Theil-Sen
             ts = stats.theilslopes(y_input, x_input)
+            model_prediction = ts[1] + ts[0] * forecast_x[0]
 
-            # Calculate forecast from Theil-Sen slope and intercept, add to results
-            block_predictions['MBD_predictions'].append(ts[1] + ts[0] * forecast_x[0])
-
-            # Fit Theil-Sen to detrended data
+            # Fit and predict detrended data with Theil-Sen
             ts = stats.theilslopes(detrended_y_input, x_input)
-
-            # Calculate forecast from Theil-Sen slope and intercept, add to results
-            block_predictions['detrended_MBD_predictions'].append((ts[1] + ts[0] * forecast_x[0]) + block[model_order, 2])
+            detrended_model_change_prediction = ts[1] + ts[0] * forecast_x[0]
+            detrended_model_prediction = detrended_model_change_prediction + block[(model_order - 1), 2]
 
         if model_type == 'Seigel':
 
-            # Add model type to results
-            block_predictions['model_type'].append(model_type)
-
-            # Add model order to results
-            block_predictions['model_order'].append(model_order)
-
-            block_predictions['MBD_inputs'].append(y_input)
-            block_predictions['detrended_MBD_inputs'].append(detrended_y_input)
-
-            # Fit Seigel to raw data
+            # Fit and predict raw data with Seigel
             ss = stats.siegelslopes(y_input, x_input)
+            model_prediction = ss[1] + ss[0] * forecast_x[0]
 
-            # Calculate forecast from Seigel slope and intercept, add to results
-            block_predictions['MBD_predictions'].append(ss[1] + ss[0] * forecast_x[0])
-
-            # Fit Theil-Sen to detrended data
+            # Fit and predict detrended data with Seigel
             ss = stats.siegelslopes(detrended_y_input, x_input)
-
-            # Calculate forecast from Seigel slope and intercept, add to results
-            block_predictions['detrended_MBD_predictions'].append((ss[1] + ss[0] * forecast_x[0]) + block[model_order, 2])
+            detrended_model_change_prediction = ss[1] + ss[0] * forecast_x[0]
+            detrended_model_prediction = detrended_model_change_prediction + block[(model_order - 1), 2]
 
         if model_type == 'Ridge':
 
-            # Add model type to results
-            block_predictions['model_type'].append(model_type)
-
-            # Add model order to results
-            block_predictions['model_order'].append(model_order)
-
-            block_predictions['MBD_inputs'].append(y_input)
-            block_predictions['detrended_MBD_inputs'].append(detrended_y_input)
-
-            # Fit ridge to raw data
+            # Fit and predict raw data with ridge
             ridge = Ridge()
             ridge.fit(np.array(x_input).reshape(-1, 1), np.array(y_input).reshape(-1, 1))
+            model_predictions = ridge.predict(np.array(forecast_x).reshape(-1, 1))[0]
+            model_prediction = model_predictions[0]
 
-            # Get prediction, add to results
-            block_predictions['MBD_predictions'].append(ridge.predict(np.array(forecast_x).reshape(-1, 1))[0][0])
-
-            # Fit ridge to detrended data
+            # Fit and predict detrended data with ridge
             ridge = Ridge()
             ridge.fit(np.array(x_input).reshape(-1, 1), np.array(detrended_y_input).reshape(-1, 1))
+            detrended_model_change_predictions = ridge.predict(np.array(forecast_x).reshape(-1, 1))[0]
+            detrended_model_change_prediction = detrended_model_change_predictions[0]
+            detrended_model_prediction = detrended_model_change_prediction + block[(model_order - 1), 2]
 
-            # Get prediction, add to results
-            block_predictions['detrended_MBD_predictions'].append(ridge.predict(np.array(forecast_x).reshape(-1, 1))[0][0] + block[model_order, 2])
-
+        # Stop fit timer, get total dT in seconds
         dT = time.time() - start_time
 
+        # Collect forecast
+        block_predictions['MBD_predictions'].append(model_prediction)
+
+        # Collect detrended model forecast
+        block_predictions['detrended_MBD_predictions'].append(detrended_model_prediction)
+
+        # Log model results for debug
+        logging.debug('')
+        logging.debug(f'{model_type} MBD prediction: {model_prediction:.3f}')
+        logging.debug(f'{model_type} detrended MBD prediction: {detrended_model_change_prediction:.3f}')
+        logging.debug(f'Detrended {model_type} MBD prediction: {detrended_model_prediction:.3f}')
+
         if time_fits == True:
-            print(f'{model_type}, order {model_order}: {dT} sec.')  
+            logging.info(f'{model_type}, order {model_order}: {dT:.2e} sec.') 
 
     return block_predictions
 

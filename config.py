@@ -56,7 +56,7 @@ class LinearModelsBootstrappingParameters:
     sample_size = 3
     model_orders = [4]
     model_types = ['OLS', 'TS', 'Seigel', 'Ridge']
-    time_fits = False
+    time_fits = True
 
     n_cpus = mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)
