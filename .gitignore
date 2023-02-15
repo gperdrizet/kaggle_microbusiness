@@ -1,6 +1,9 @@
 # Data
 data
 
+# Logs
+logs
+
 # Jupyter Notebook related stuff
 .ipynb_checkpoints
 
