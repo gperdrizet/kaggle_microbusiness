@@ -4,7 +4,7 @@ sys.path.append('..')
 import config as conf
 import functions.initialization_functions as init_funcs
 import functions.data_manipulation_functions as data_funcs
-import functions.parallization_functions as parallel_funcs
+import functions.parallelization_functions as parallel_funcs
 
 # import time
 import numpy as np
