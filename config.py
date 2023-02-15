@@ -1,5 +1,6 @@
 import os
 import logging
+import multiprocessing as mp
 
 '''Configuration file for hardcoding python variables.
 Used to store things like file paths, model hyperparameters etc.'''
@@ -56,3 +57,6 @@ class LinearModelsBootstrappingParameters:
     model_orders = [4]
     model_types = ['OLS', 'TS', 'Seigel', 'Ridge']
     time_fits = False
+
+    n_cpus = mp.cpu_count() - 2
+    samples_per_cpu = int(num_samples / n_cpus)
