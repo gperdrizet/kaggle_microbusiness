@@ -232,7 +232,7 @@ def smape_score_models(
             block_data[key].extend(value)
 
         # Get the true value and add to data
-        actual_value = sample[block_num, model_order, 2]
+        actual_value = sample[block_num, (model_order - 1), 2]
 
         # Get and collect SMAPE value for models
         for value in block_predictions['MBD_predictions']:
