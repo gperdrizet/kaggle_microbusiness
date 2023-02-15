@@ -52,9 +52,9 @@ class LinearModelsBootstrappingParameters:
     output_file_root_name = 'linear_models'
 
     # Experiment parameters
-    num_samples = 180
-    sample_size = 100
-    model_orders = [4,8,16]
+    num_samples = 1800
+    sample_size = 1500
+    model_orders = [4,8,16,32]
     model_types = ['OLS', 'TS', 'Seigel', 'Ridge']
     time_fits = True
 
