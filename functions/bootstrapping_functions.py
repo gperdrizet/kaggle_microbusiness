@@ -39,11 +39,21 @@ def sample_parsed_data(timepoints, sample_size):
 
     return sample
 
-def make_forecasts(block, model_types, model_order, time_fit = False):
+def make_forecasts(block, model_types, model_order, time_fits = False):
     '''Uses specified model type and model order to forecast
     within block, one timepoint into the future. Also returns
     naive, 'carry-forward' prediction for the same datapoint 
     for comparison'''
+
+    # Log input block for debug
+    logging.debug('')
+    logging.debug(f'Input block:')
+
+    for row in block[0:,]:
+        row = [f'{x:.2e}' for x in row]
+        logging.debug(f'{row}')
+
+    logging.debug('')
 
     # Holder for SMAPE values
     block_predictions = {
@@ -59,8 +69,12 @@ def make_forecasts(block, model_types, model_order, time_fit = False):
     # so model_order gets the model_order th element (zero anchored)
     block_predictions['model_type'].append('control')
     block_predictions['model_order'].append(model_order)
-    block_predictions['MBD_predictions'].append(block[(model_order - 1), 2])
-    block_predictions['detrended_MBD_predictions'].append(block[(model_order - 1), 5] + block[model_order, 2])
+
+    control_prediction = block[(model_order - 1), 2]
+    detrended_control_prediction = block[(model_order - 1), 5] + block[model_order, 2]
+
+    block_predictions['MBD_predictions'].append(control_prediction)
+    block_predictions['detrended_MBD_predictions'].append(detrended_control_prediction)
 
     # X input is model_order sequential integers
     x_input = list(range(model_order))
@@ -79,6 +93,18 @@ def make_forecasts(block, model_types, model_order, time_fit = False):
     # in the first prediction here, but some statsmodels estimators
     # expect the same dim during forecast as they were fitted 
     forecast_x = list(range(model_order, (model_order * 2)))
+
+    true_y = block[model_order, 2]
+    true_detrended_y = block[model_order, 5]
+
+    # Log what we have so far legibly for debug
+    formatted_y_input = [f'{x:.3f}' for x in y_input]
+    formatted_detrended_y_input = [f'{x:.3f}' for x in detrended_y_input]
+
+    logging.debug(f'MDB - input: {formatted_y_input}, target: {true_y:.3f}')
+    logging.debug(f'Detrended MBD - input: {formatted_detrended_y_input}, target: {true_detrended_y:.3f}')
+    logging.debug(f'Control prediction: {control_prediction:.2f}')
+    logging.debug(f'Detrended control prediction: {detrended_control_prediction:.2f}')
 
     for model_type in model_types:
 
@@ -182,12 +208,17 @@ def make_forecasts(block, model_types, model_order, time_fit = False):
 
         dT = time.time() - start_time
 
-        if time_fit == True:
+        if time_fits == True:
             print(f'{model_type}, order {model_order}: {dT} sec.')  
 
     return block_predictions
 
-def smape_score_models(sample, model_types, model_order, time_fit = False):
+def smape_score_models(
+        sample, 
+        model_types, 
+        model_order, 
+        time_fits = False
+    ):
     '''Takes a sample of blocks, makes forecast for each 
     and collects resulting SMAPE values'''
 
@@ -207,7 +238,7 @@ def smape_score_models(sample, model_types, model_order, time_fit = False):
     for block_num in range(sample.shape[0]):
 
         # Get the forecasted value(s)
-        block_predictions = make_forecasts(sample[block_num], model_types, model_order, time_fit)
+        block_predictions = make_forecasts(sample[block_num], model_types, model_order, time_fits)
 
         # Collect predictions, input data and model info.
         for key, value in block_predictions.items():
@@ -231,8 +262,19 @@ def smape_score_models(sample, model_types, model_order, time_fit = False):
 
     return block_data
 
-def bootstrap_smape_scores(timepoints, sample_num, sample_size, model_order, model_types, time_fit = False):
+def bootstrap_smape_scores(
+        timepoints, 
+        sample_num, 
+        sample_size, 
+        model_order, 
+        model_types, 
+        time_fits = False
+    ):
+    '''Takes bootstrapping experiment run parameters, generates random sample of 
+    blocks from timepoints and runs forecast/score for models+control returns
+    dict of results'''
 
+    logging.debug('')
     logging.debug(f'Worker {sample_num} starting bootstrap run.')
 
     # Holder for sample results
@@ -253,7 +295,7 @@ def bootstrap_smape_scores(timepoints, sample_num, sample_size, model_order, mod
     sample = sample_parsed_data(timepoints, sample_size)
 
     # Do forecast and aggregate score across each block in sample
-    result = smape_score_models(sample, model_types, model_order, time_fit)
+    result = smape_score_models(sample, model_types, model_order, time_fits)
 
     # Add sample results
     for key, value in result.items():
