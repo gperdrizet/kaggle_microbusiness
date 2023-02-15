@@ -24,7 +24,13 @@ if __name__ == '__main__':
     input_file = f'{paths.PARSED_DATA_PATH}/{params.input_file_root_name}{block_size}.npy'
     timepoints = np.load(input_file)
 
-    # Log some details about the input data
+    # Log some details about the input data & run parameters
+    logging.info('')
+    logging.info(f'CPUs: {params.n_cpus}')
+    logging.info(f'Samples: {params.num_samples} ({params.samples_per_cpu} per CPU)')
+    logging.info(f'Sample size: {params.sample_size}')
+    logging.info(f'Model orders: {params.model_orders}')
+    logging.info(f'Model types: control + {params.model_types}')
     logging.info('')
     logging.info(f'Input timepoints shape: {timepoints.shape}')
     logging.info('')
