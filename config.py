@@ -60,3 +60,10 @@ class LinearModelsBootstrappingParameters:
 
     n_cpus = mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)
+
+class ARIMA_model_parameters:
+
+    # Run specific files
+    log_file_name = 'ARIMA_hyperparameter_bootstrapping.log'
+    input_file_root_name = 'structured_bootstrap_blocksize'
+    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping'
