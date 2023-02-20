@@ -42,6 +42,8 @@ def load_inspect_parsed_data(
     logging.info(f'CPUs: {params.n_cpus}')
     logging.info(f'Samples: {params.num_samples} ({params.samples_per_cpu} per CPU)')
     logging.info(f'Sample size: {params.sample_size}')
+    #logging.info(f'Model orders: {params.model_orders}')
+    #logging.info(f'Model types: control + {params.model_types}')
     logging.info('')
     logging.info(f'Input timepoints shape: {timepoints.shape}')
     logging.info('')

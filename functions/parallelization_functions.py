@@ -62,6 +62,49 @@ def parallel_bootstrapped_smape(
 
     return data
 
+def parallel_ARIMA_gridsearch(
+    timepoints, 
+    sample_num, 
+    sample_size,
+    lag_orders,
+    difference_degrees,
+    moving_average_orders, 
+    time_fits = False
+):
+    
+    # Holder for sample results
+    data = {
+        'sample': [],
+        'lag_order': [],
+        'difference_degree': [],
+        'moving_average_order': [],
+        'SMAPE_value': [],
+        'MBD_predictions': [],
+        'MBD_inputs': [],
+        'MBD_actual': []
+    }
+
+    # Loop on model orders
+    for lag_order in lag_orders:
+        for difference_degree in difference_degrees:
+            for moving_average_order in moving_average_orders:
+
+                result = bootstrap_funcs.bootstrap_smape_scores(            
+                    timepoints, 
+                    sample_num, 
+                    sample_size, 
+                    lag_order,
+                    difference_degree,
+                    moving_average_order,
+                    time_fits
+                )
+
+                # Add results for this order
+                for key, value in result.items():
+                    data[key].extend(value)
+
+    return data
+
 def cleanup_bootstrapping_multiprocessing_pool(pool, result_objects):
 
     # Collect results
