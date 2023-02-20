@@ -12,6 +12,7 @@ def start_multiprocessing_pool():
     # Instantiate multiprocessing pool to parallelize over folds
     n_cpus = mp.cpu_count() - 2
 
+    logging.info('')
     logging.info(f'Starting processes for {n_cpus} CPUs (available - 2)')
 
     pool = mp.Pool(processes = n_cpus)
@@ -27,7 +28,7 @@ def parallel_bootstrapped_smape(
     sample_size, 
     model_orders, 
     model_types,
-    time_fit = False
+    time_fits = False
 ):
     
     # Holder for sample results
@@ -52,7 +53,7 @@ def parallel_bootstrapped_smape(
             sample_size, 
             model_order, 
             model_types,
-            time_fit
+            time_fits
         )
 
         # Add results for this order

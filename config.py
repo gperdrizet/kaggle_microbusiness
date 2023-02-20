@@ -1,5 +1,6 @@
 import os
 import logging
+import multiprocessing as mp
 
 '''Configuration file for hardcoding python variables.
 Used to store things like file paths, model hyperparameters etc.'''
@@ -11,7 +12,7 @@ PROJECT_NAME = 'godaddy-microbusiness-density-forecasting'
 PROJECT_ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Logging stuff
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 LOG_FORMAT = '%(name)s:%(levelname)s - %(message)s'
 
 class DataFilePaths:
@@ -51,8 +52,11 @@ class LinearModelsBootstrappingParameters:
     output_file_root_name = 'linear_models'
 
     # Experiment parameters
-    num_samples = 18
-    sample_size = 3
-    model_orders = [4]
+    num_samples = 180
+    sample_size = 1500
+    model_orders = [4,8,16,32]
     model_types = ['OLS', 'TS', 'Seigel', 'Ridge']
     time_fits = False
+
+    n_cpus = mp.cpu_count() - 2
+    samples_per_cpu = int(num_samples / n_cpus)
