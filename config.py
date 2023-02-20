@@ -67,3 +67,12 @@ class ARIMA_model_parameters:
     log_file_name = 'ARIMA_hyperparameter_bootstrapping.log'
     input_file_root_name = 'structured_bootstrap_blocksize'
     output_file_root_name = 'ARIMA_hyperparameter_bootstrapping'
+
+    # Experiment parameters
+    num_samples = 180
+    sample_size = 1500
+    model_orders = [4,8,10]
+    time_fits = False
+
+    n_cpus = mp.cpu_count() - 2
+    samples_per_cpu = int(num_samples / n_cpus)
