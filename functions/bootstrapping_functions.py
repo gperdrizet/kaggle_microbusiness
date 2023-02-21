@@ -283,9 +283,14 @@ def make_ARIMA_forecasts(
     # Start fit timer
     start_time = time.time()
 
-    model = ARIMA(y_input, order=(lag_order,difference_degree,moving_average_order))
-    model_fit = model.fit()
-    model_prediction = model_fit.forecast()[0]
+    try:
+        model = ARIMA(y_input, order=(lag_order,difference_degree,moving_average_order))
+        model_fit = model.fit()
+        model_prediction = model_fit.forecast()[0]
+
+    except:
+        model_prediction = np.nan
+        
     #print(f'Model prediction: {model_prediction}')
 
     # Stop fit timer, get total dT in seconds

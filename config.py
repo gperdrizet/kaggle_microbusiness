@@ -73,9 +73,9 @@ class ARIMA_model_parameters:
     sample_size = 10
     model_types = ['ARIMA']
 
-    lag_orders = [0,1,2,4,8]
-    difference_degrees = [0,1,2,3]
-    moving_average_orders = [0,1,2,4,8]
+    lag_orders = [4,6]
+    difference_degrees = [1,2]
+    moving_average_orders = [4,6]
 
     n_cpus = mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)

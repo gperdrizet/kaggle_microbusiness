@@ -2,6 +2,8 @@ import config as conf
 import functions.initialization_functions as init_funcs
 import functions.parallelization_functions as parallel_funcs
 
+import pandas as pd
+
 if __name__ == '__main__':
 
     paths = conf.DataFilePaths()
