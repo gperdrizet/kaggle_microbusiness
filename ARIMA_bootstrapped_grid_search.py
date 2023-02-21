@@ -16,13 +16,13 @@ if __name__ == '__main__':
 
     # Block size used for parsed data loading needs to be 
     # the largest model model order plus one for the forecast
-    block_size = max(params.lag_orders + params.moving_average_orders) + 1
+    # block_size = max(params.lag_orders + params.moving_average_orders) + 1
 
-    # Now load up the parsed data with the blocksize calculated above and log some run details
-    timepoints = init_funcs.load_inspect_parsed_data(
-        input_file = f'{paths.PARSED_DATA_PATH}/{params.input_file_root_name}{block_size}.npy',
-        params = params
-    )
+    # # Now load up the parsed data with the blocksize calculated above and log some run details
+    # timepoints = init_funcs.load_inspect_parsed_data(
+    #     input_file = f'{paths.PARSED_DATA_PATH}/{params.input_file_root_name}{block_size}.npy',
+    #     params = params
+    # )
 
     # Fire up the pool
     pool, result_objects = parallel_funcs.start_multiprocessing_pool()
@@ -32,9 +32,11 @@ if __name__ == '__main__':
 
         result = pool.apply_async(parallel_funcs.parallel_ARIMA_gridsearch,
             args = (
-                timepoints, 
+                paths.PARSED_DATA_PATH,
+                params.input_file_root_name,
                 sample_num, 
-                params.sample_size, 
+                params.sample_size,
+                params.block_sizes,
                 params.lag_orders,
                 params.difference_degrees,
                 params.moving_average_orders, 

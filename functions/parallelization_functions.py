@@ -63,9 +63,11 @@ def parallel_bootstrapped_smape(
     return data
 
 def parallel_ARIMA_gridsearch(
-    timepoints, 
+    parsed_data_path,
+    input_file_root_name,
     sample_num,
     sample_size,
+    block_sizes,
     lag_orders,
     difference_degrees,
     moving_average_orders, 
@@ -76,6 +78,7 @@ def parallel_ARIMA_gridsearch(
     data = {
         'sample': [],
         'model_type': [],
+        'block_size':[],
         'lag_order': [],
         'difference_degree': [],
         'moving_average_order': [],
@@ -85,24 +88,28 @@ def parallel_ARIMA_gridsearch(
         'MBD_actual': []
     }
 
-    # Loop on model orders
-    for lag_order in lag_orders:
-        for difference_degree in difference_degrees:
-            for moving_average_order in moving_average_orders:
+    # Loop on model parameters
+    for block_size in block_sizes:
+        for lag_order in lag_orders:
+            for difference_degree in difference_degrees:
+                for moving_average_order in moving_average_orders:
 
-                result = bootstrap_funcs.bootstrap_ARIMA_smape_scores(            
-                    timepoints, 
-                    sample_num, 
-                    sample_size, 
-                    lag_order,
-                    difference_degree,
-                    moving_average_order,
-                    time_fits
-                )
+                    input_file = f'{parsed_data_path}/{input_file_root_name}{block_size}.npy',
+                    timepoints = np.load(input_file)
 
-                # Add results for this order
-                for key, value in result.items():
-                    data[key].extend(value)
+                    result = bootstrap_funcs.bootstrap_ARIMA_smape_scores(            
+                        timepoints, 
+                        sample_num, 
+                        sample_size, 
+                        lag_order,
+                        difference_degree,
+                        moving_average_order,
+                        time_fits
+                    )
+
+                    # Add results for this order
+                    for key, value in result.items():
+                        data[key].extend(value)
 
     return data
 
