@@ -64,7 +64,7 @@ def parallel_bootstrapped_smape(
 
 def parallel_ARIMA_gridsearch(
     timepoints, 
-    sample_num, 
+    sample_num,
     sample_size,
     lag_orders,
     difference_degrees,
@@ -75,11 +75,12 @@ def parallel_ARIMA_gridsearch(
     # Holder for sample results
     data = {
         'sample': [],
+        'model_type': [],
         'lag_order': [],
         'difference_degree': [],
         'moving_average_order': [],
         'SMAPE_value': [],
-        'MBD_predictions': [],
+        'MBD_prediction': [],
         'MBD_inputs': [],
         'MBD_actual': []
     }
@@ -89,7 +90,7 @@ def parallel_ARIMA_gridsearch(
         for difference_degree in difference_degrees:
             for moving_average_order in moving_average_orders:
 
-                result = bootstrap_funcs.bootstrap_smape_scores(            
+                result = bootstrap_funcs.bootstrap_ARIMA_smape_scores(            
                     timepoints, 
                     sample_num, 
                     sample_size, 
@@ -121,6 +122,34 @@ def cleanup_bootstrapping_multiprocessing_pool(pool, result_objects):
         'detrended_MBD_predictions': [],
         'MBD_inputs': [],
         'detrended_MBD_inputs': [],
+        'MBD_actual': []
+    }
+
+    for result in results:
+        for key, value in result.items():
+            data[key].extend(value)
+
+    # Clean up
+    pool.close()
+    pool.join()
+
+    return data
+
+def cleanup_ARIMA_bootstrapping_multiprocessing_pool(pool, result_objects):
+
+    # Collect results
+    results = [result.get() for result in result_objects]
+
+    # Holder for parsed sample results
+    data = {
+        'sample': [],
+        'model_type': [],
+        'lag_order': [],
+        'difference_degree': [],
+        'moving_average_order': [],
+        'SMAPE_value': [],
+        'MBD_prediction': [],
+        'MBD_inputs': [],
         'MBD_actual': []
     }
 

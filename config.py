@@ -69,8 +69,8 @@ class ARIMA_model_parameters:
     output_file_root_name = 'ARIMA_hyperparameter_bootstrapping'
 
     # Experiment parameters
-    num_samples = 180
-    sample_size = 1500
+    num_samples = 18
+    sample_size = 10
     model_types = ['ARIMA']
 
     lag_orders = [0,1,2,4,8]
@@ -79,4 +79,4 @@ class ARIMA_model_parameters:
 
     n_cpus = mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)
-    time_fits = False
+    time_fits = True
