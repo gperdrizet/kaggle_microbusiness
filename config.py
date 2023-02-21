@@ -12,7 +12,7 @@ PROJECT_NAME = 'godaddy-microbusiness-density-forecasting'
 PROJECT_ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Logging stuff
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = '%(name)s:%(levelname)s - %(message)s'
 
 class DataFilePaths:
@@ -69,14 +69,14 @@ class ARIMA_model_parameters:
     output_file_root_name = 'ARIMA_hyperparameter_bootstrapping'
 
     # Experiment parameters
-    num_samples = 18
-    sample_size = 10
+    num_samples = 180
+    sample_size = 100
     model_types = ['ARIMA']
 
-    block_sizes = [6,12]
+    block_sizes = [6,11]
     lag_orders = [0,1,2,3,4,5]
-    difference_degrees = [0,1,2]
-    moving_average_orders = [0,1,2]
+    difference_degrees = [0,1,2,3]
+    moving_average_orders = [0,1,2,3]
 
     n_cpus = mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)

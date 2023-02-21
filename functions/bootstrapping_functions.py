@@ -1,5 +1,6 @@
 import time
 import logging
+import warnings
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
@@ -211,16 +212,6 @@ def make_ARIMA_forecasts(
     Also returns naive, 'carry-forward' prediction for the same datapoint 
     for comparison'''
 
-    # Log input block for debug
-    logging.debug('')
-    logging.debug(f'Input block:')
-
-    for row in block[0:,]:
-        row = [f'{x:.3e}' for x in row]
-        logging.debug(f'{row}')
-
-    logging.debug('')
-
     # Holder for SMAPE values
     block_predictions = {
         'model_type': [],
@@ -231,43 +222,17 @@ def make_ARIMA_forecasts(
         'MBD_inputs': [],
     }
 
+    y_input = list(block[:-1, 2])
+    control_prediction = block[(lag_order - 1), 2]
+
     # Get prediction for naive control. Note: these are indexes
     # so model_order gets the model_order th element (zero anchored)
     block_predictions['model_type'].append('control')
     block_predictions['lag_order'].append(lag_order)
     block_predictions['difference_degree'].append(difference_degree)
     block_predictions['moving_average_order'].append(moving_average_order)
-    
-    control_prediction = block[(lag_order - 1), 2]
-    block_predictions['MBD_prediction'].append(control_prediction)
-
-    # # X input is model_order sequential integers
-    # x_input = list(range(lag_order))
-
-    # Y input is MBD values starting from the left
-    # edge of the block, up to the model order. Note: this
-    # is a slice so, the right edge is exclusive 
-    y_input = list(block[:-1, 2])
-    #print(f'Y input: {y_input}')
-
-    # Add input data to results
     block_predictions['MBD_inputs'].append(y_input)
-
-    # # Forecast X input is sequential integers starting
-    # # after the end of the X input. Note: we are only interested
-    # # in the first prediction here, but some statsmodels estimators
-    # # expect the same dim during forecast as they were fitted 
-    # forecast_x = list(range(lag_order, (lag_order * 2)))
-
-    true_y = block[-1:, 2][0]
-    #print(f'True y: {true_y}')
-
-    # Log what we have so far legibly for debug
-    formatted_y_input = [f'{x:.3f}' for x in y_input]
-
-    logging.debug(f'MDB - input: {formatted_y_input}, target: {true_y:.3f}')
-    logging.debug('')
-    logging.debug(f'Control MBD prediction: {control_prediction:.3f}')
+    block_predictions['MBD_prediction'].append(control_prediction)
 
     # Add model info. to results
     block_predictions['model_type'].append('ARIMA')
@@ -276,9 +241,12 @@ def make_ARIMA_forecasts(
     block_predictions['moving_average_order'].append(moving_average_order)
     block_predictions['MBD_inputs'].append(y_input)
 
-    # # Set default values for outputs to NAN in case we have fits that fail
-    # # for some reason
-    # model_prediction = np.nan
+    # Get ready to catch warnings from statsmodels during fit
+    warnings.filterwarnings('error')
+
+    # Set default value of NAN for prediction in case there is a
+    # problem during the fit
+    model_prediction = np.nan
 
     # Start fit timer
     start_time = time.time()
@@ -288,20 +256,23 @@ def make_ARIMA_forecasts(
         model_fit = model.fit()
         model_prediction = model_fit.forecast()[0]
 
+    except UserWarning:
+        logging.debug(f'ARIMA({lag_order}, {difference_degree}, {moving_average_order}): UserWarning')
+
+    except RuntimeWarning:
+        logging.debug(f'ARIMA({lag_order}, {difference_degree}, {moving_average_order}): ConvergenceWarning')
+
     except:
-        model_prediction = np.nan
-        
-    #print(f'Model prediction: {model_prediction}')
+        logging.debug(f'ARIMA({lag_order}, {difference_degree}, {moving_average_order}): Unknown error')
 
     # Stop fit timer, get total dT in seconds
     dT = time.time() - start_time
 
+    # Stop filtering warnings
+    warnings.resetwarnings()
+
     # Collect forecast
     block_predictions['MBD_prediction'].append(model_prediction)
-
-    # Log model results for debug
-    logging.debug('')
-    logging.debug(f'ARIMA MBD prediction: {model_prediction:.3f}')
 
     if time_fits == True:
         logging.info(f'ARIMA({lag_order}, {difference_degree}, {moving_average_order}): {dT:.2e} sec.') 
@@ -463,8 +434,8 @@ def bootstrap_ARIMA_smape_scores(
     blocks from timepoints and runs forecast/score for models+control returns
     dict of results'''
 
-    logging.debug('')
-    logging.debug(f'Worker {sample_num} starting bootstrap run.')
+    # logging.debug('')
+    # logging.debug(f'Worker {sample_num} starting bootstrap run.')
 
     # Holder for sample results
     sample_data = {

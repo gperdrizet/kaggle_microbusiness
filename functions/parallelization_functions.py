@@ -78,7 +78,7 @@ def parallel_ARIMA_gridsearch(
     data = {
         'sample': [],
         'model_type': [],
-        'block_size':[],
+        'block_size': [],
         'lag_order': [],
         'difference_degree': [],
         'moving_average_order': [],
@@ -90,12 +90,15 @@ def parallel_ARIMA_gridsearch(
 
     # Loop on model parameters
     for block_size in block_sizes:
+
+        # Load up parsed data for this blocksize
+        input_file = f'{parsed_data_path}/{input_file_root_name}{block_size}.npy'
+        logging.info(f'Input file: {input_file}')
+        timepoints = np.load(input_file)
+
         for lag_order in lag_orders:
             for difference_degree in difference_degrees:
                 for moving_average_order in moving_average_orders:
-
-                    input_file = f'{parsed_data_path}/{input_file_root_name}{block_size}.npy',
-                    timepoints = np.load(input_file)
 
                     result = bootstrap_funcs.bootstrap_ARIMA_smape_scores(            
                         timepoints, 
@@ -110,6 +113,9 @@ def parallel_ARIMA_gridsearch(
                     # Add results for this order
                     for key, value in result.items():
                         data[key].extend(value)
+
+                    # Add blocksize to results
+                    data['block_size'].extend([block_size] * len(result['model_type']))
 
     return data
 
@@ -151,6 +157,7 @@ def cleanup_ARIMA_bootstrapping_multiprocessing_pool(pool, result_objects):
     data = {
         'sample': [],
         'model_type': [],
+        'block_size': [],
         'lag_order': [],
         'difference_degree': [],
         'moving_average_order': [],
