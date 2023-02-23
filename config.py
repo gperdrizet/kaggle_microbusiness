@@ -29,6 +29,7 @@ class DataFilePaths:
 
     # Parsed/formatted data for benchmarking, training and cross validation
     PARSED_DATA_PATH = f'{DATA_PATH}/parsed_data'
+    PARSED_DATA_COLUMN_INDEX = f'{PARSED_DATA_PATH}/column_index'
 
     # Contest submission files
     SUBMISSIONS_PATH = f'{DATA_PATH}/submissions'
