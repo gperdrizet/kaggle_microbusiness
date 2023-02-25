@@ -90,3 +90,7 @@ class GRU_model_parameters():
     log_file_name = 'GRU_hyperparameter_bootstrapping.log'
     input_file_root_name = 'structured_bootstrap_blocksize'
     output_file_root_name = 'GRU_hyperparameter_bootstrapping'
+    
+    # Data related stuff
+    input_data_type = 'microbusiness_density'
+    training_split_fraction = 0.7
