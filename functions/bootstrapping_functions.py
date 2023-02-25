@@ -234,7 +234,7 @@ def make_ARIMA_forecasts(
 
     # Make the 'control' prediction - i.e. the second to last
     # value from the block
-    control_prediction = block[-1, index[data_type]]
+    control_prediction = block[-2, index[data_type]]
 
     # Get prediction for naive control. Note: these are indexes
     # so model_order gets the model_order th element (zero anchored)
@@ -274,6 +274,13 @@ def make_ARIMA_forecasts(
 
     # Collect forecast
     block_predictions['MBD_prediction'].append(model_prediction)
+
+    # Log for debug
+    logging.debug('')
+    logging.debug(f'Block: {block[:, index[data_type]]}')
+    logging.debug(f'Input: {y_input}')
+    logging.debug(f'Control forecast: {control_prediction}')
+    logging.debug(f'ARIMA forecast: {model_prediction}')
 
     # Collect 'goodness-of-fit' results
     block_predictions['fit_residuals'].append(model_fit.resid)
@@ -382,7 +389,7 @@ def smape_score_ARIMA_models(
             block_data[key].extend(value)
 
         # Get the true value and add to data
-        actual_value = sample[block_num, lag_order, 2]
+        actual_value = sample[block_num, -1, index['microbusiness_density']]
 
         # Get and collect SMAPE value for models
         for value in block_predictions['MBD_prediction']:

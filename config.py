@@ -67,16 +67,16 @@ class ARIMA_model_parameters:
     # Run specific files
     log_file_name = 'ARIMA_hyperparameter_bootstrapping.log'
     input_file_root_name = 'structured_bootstrap_blocksize'
-    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping'
+    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping-block_size'
 
     # Experiment parameters
     data_type = 'microbusiness_density'
-    num_samples = 18
-    sample_size = 100
+    num_samples = 180
+    sample_size = 1000
 
-    block_sizes = [37]
-    lag_orders = [1]
-    difference_degrees = [0]
+    block_sizes = [9,18,37]
+    lag_orders = [0,1,2]
+    difference_degrees = [0,1,2]
     moving_average_orders = [0]
 
     # Parallelization stuff
