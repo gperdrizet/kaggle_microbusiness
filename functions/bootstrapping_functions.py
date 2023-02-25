@@ -201,11 +201,14 @@ def make_forecasts(block, model_types, model_order, time_fits = False):
     return block_predictions
 
 def make_ARIMA_forecasts(
-    block, 
+    block,
+    index,
+    data_type,
     lag_order,
     difference_degree,
     moving_average_order,
-    time_fits = False
+    suppress_fit_warnings,
+    time_fits
 ):
     '''Takes block, lag and moving average order and difference degree 
     Uses ARIMA to forecast from block, one timepoint into the future. 
@@ -220,10 +223,18 @@ def make_ARIMA_forecasts(
         'moving_average_order': [],
         'MBD_prediction': [],
         'MBD_inputs': [],
+        'fit_residuals': [],
+        'AIC': [],
+        'BIC': []
     }
 
-    y_input = list(block[:-1, 2])
-    control_prediction = block[(lag_order - 1), 2]
+    # Get input data from block, up to one datapoint before
+    # the end of the timeseries (this will be the forecast)
+    y_input = list(block[:-1, index[data_type]])
+
+    # Make the 'control' prediction - i.e. the second to last
+    # value from the block
+    control_prediction = block[-1, index[data_type]]
 
     # Get prediction for naive control. Note: these are indexes
     # so model_order gets the model_order th element (zero anchored)
@@ -234,6 +245,11 @@ def make_ARIMA_forecasts(
     block_predictions['MBD_inputs'].append(y_input)
     block_predictions['MBD_prediction'].append(control_prediction)
 
+    # Add placeholder values for 'goodness-of-fit' columns for control
+    block_predictions['fit_residuals'].append([0])
+    block_predictions['AIC'].append(0)
+    block_predictions['BIC'].append(0)
+
     # Add model info. to results
     block_predictions['model_type'].append('ARIMA')
     block_predictions['lag_order'].append(lag_order)
@@ -241,38 +257,29 @@ def make_ARIMA_forecasts(
     block_predictions['moving_average_order'].append(moving_average_order)
     block_predictions['MBD_inputs'].append(y_input)
 
-    # Get ready to catch warnings from statsmodels during fit
-    warnings.filterwarnings('error')
-
-    # Set default value of NAN for prediction in case there is a
-    # problem during the fit
-    model_prediction = np.nan
-
     # Start fit timer
     start_time = time.time()
 
-    try:
+    with warnings.catch_warnings():
+
+        if suppress_fit_warnings == True:
+            warnings.simplefilter("ignore")
+
         model = ARIMA(y_input, order=(lag_order,difference_degree,moving_average_order))
         model_fit = model.fit()
-        model_prediction = model_fit.forecast()[0]
-
-    except UserWarning:
-        logging.debug(f'ARIMA({lag_order}, {difference_degree}, {moving_average_order}): UserWarning')
-
-    except RuntimeWarning:
-        logging.debug(f'ARIMA({lag_order}, {difference_degree}, {moving_average_order}): ConvergenceWarning')
-
-    except:
-        logging.debug(f'ARIMA({lag_order}, {difference_degree}, {moving_average_order}): Unknown error')
+        model_prediction = model_fit.forecast(steps = 1)[0]
 
     # Stop fit timer, get total dT in seconds
     dT = time.time() - start_time
 
-    # Stop filtering warnings
-    warnings.resetwarnings()
-
     # Collect forecast
     block_predictions['MBD_prediction'].append(model_prediction)
+
+    # Collect 'goodness-of-fit' results
+    block_predictions['fit_residuals'].append(model_fit.resid)
+    block_predictions['AIC'].append(model_fit.aic)
+    block_predictions['BIC'].append(model_fit.bic)
+
 
     if time_fits == True:
         logging.info(f'ARIMA({lag_order}, {difference_degree}, {moving_average_order}): {dT:.2e} sec.') 
@@ -329,11 +336,14 @@ def smape_score_models(
     return block_data
 
 def smape_score_ARIMA_models(
-        sample, 
+        sample,
+        index,
+        data_type,
         lag_order,
         difference_degree,
         moving_average_order,
-        time_fits = False
+        suppress_fit_warnings,
+        time_fits
 ):
     '''Takes a sample of blocks, makes forecast for each 
     and collects resulting SMAPE values'''
@@ -347,17 +357,23 @@ def smape_score_ARIMA_models(
         'SMAPE_value': [],
         'MBD_prediction': [],
         'MBD_inputs': [],
-        'MBD_actual': []
+        'MBD_actual': [],
+        'fit_residuals': [],
+        'AIC': [],
+        'BIC': []
     }
 
     for block_num in range(sample.shape[0]):
 
         # Get the forecasted value(s)
         block_predictions = make_ARIMA_forecasts(
-            sample[block_num], 
+            sample[block_num],
+            index,
+            data_type,
             lag_order,
             difference_degree,
             moving_average_order,
+            suppress_fit_warnings,
             time_fits
         )
 
@@ -386,7 +402,7 @@ def bootstrap_smape_scores(
         time_fits = False
     ):
     '''Takes bootstrapping experiment run parameters, generates random sample of 
-    blocks from timepoints and runs forecast/score for models+control returns
+    blocks from timepoints and runs forecast/score for models+control, returns
     dict of results'''
 
     logging.debug('')
@@ -424,10 +440,13 @@ def bootstrap_smape_scores(
 def bootstrap_ARIMA_smape_scores(
         timepoints, 
         sample_num, 
-        sample_size, 
+        sample_size,
+        index,
+        data_type,
         lag_order,
         difference_degree,
         moving_average_order,
+        suppress_fit_warnings,
         time_fits
     ):
     '''Takes bootstrapping experiment run parameters, generates random sample of 
@@ -447,7 +466,10 @@ def bootstrap_ARIMA_smape_scores(
         'SMAPE_value': [],
         'MBD_prediction': [],
         'MBD_inputs': [],
-        'MBD_actual': []
+        'MBD_actual': [],
+        'fit_residuals': [],
+        'AIC': [],
+        'BIC': []
     }
 
     # Generate sample of random blocks from random timepoint
@@ -455,10 +477,13 @@ def bootstrap_ARIMA_smape_scores(
 
     # Do forecast and aggregate score across each block in sample
     result = smape_score_ARIMA_models(
-        sample, 
+        sample,
+        index,
+        data_type,
         lag_order,
         difference_degree,
         moving_average_order,
+        suppress_fit_warnings,
         time_fits
     )
     

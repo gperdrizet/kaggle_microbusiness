@@ -3,6 +3,7 @@ import functions.initialization_functions as init_funcs
 import functions.parallelization_functions as parallel_funcs
 
 import logging
+import shelve
 import pandas as pd
 
 if __name__ == '__main__':
@@ -10,6 +11,9 @@ if __name__ == '__main__':
     # Instantiate paths and params
     paths = conf.DataFilePaths()
     params = conf.ARIMA_model_parameters()
+
+    # Get column index for parsed data
+    index = shelve.open(paths.PARSED_DATA_COLUMN_INDEX)
 
     # Fire up logger
     logger = init_funcs.start_logger(
@@ -41,6 +45,8 @@ if __name__ == '__main__':
                 sample_num, 
                 params.sample_size,
                 params.block_sizes,
+                index,
+                params.data_type,
                 params.lag_orders,
                 params.difference_degrees,
                 params.moving_average_orders, 
@@ -54,11 +60,13 @@ if __name__ == '__main__':
     # Get and parse result objects, clean up pool
     data = parallel_funcs.cleanup_ARIMA_bootstrapping_multiprocessing_pool(pool, result_objects)
 
-    for key, value in data.items():
-        print(f'{key}: {len(value)}')
-
     # Convert result to Pandas DataFrame
     data_df = pd.DataFrame(data)
+
+    print()
+    print(data_df.head())
+    print()
+    print(data_df.info())
 
     # Persist to disk as HDF5
     output_file = f'{paths.BOOTSTRAPPING_RESULTS_PATH}/{params.output_file_root_name}.parquet'

@@ -70,15 +70,16 @@ class ARIMA_model_parameters:
     output_file_root_name = 'ARIMA_hyperparameter_bootstrapping'
 
     # Experiment parameters
-    num_samples = 180
+    data_type = 'microbusiness_density'
+    num_samples = 18
     sample_size = 100
-    model_types = ['ARIMA']
 
-    block_sizes = [6,11]
-    lag_orders = [0,1,2,3,4,5]
-    difference_degrees = [0,1,2,3]
-    moving_average_orders = [0,1,2,3]
+    block_sizes = [37]
+    lag_orders = [1]
+    difference_degrees = [0]
+    moving_average_orders = [0]
 
+    # Parallelization stuff
     n_cpus = mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)
     time_fits = True

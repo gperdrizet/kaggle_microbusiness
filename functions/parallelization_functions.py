@@ -68,9 +68,12 @@ def parallel_ARIMA_gridsearch(
     sample_num,
     sample_size,
     block_sizes,
+    index,
+    data_type,
     lag_orders,
     difference_degrees,
-    moving_average_orders, 
+    moving_average_orders,
+    suppress_fit_warnings = True,
     time_fits = False
 ):
     
@@ -85,7 +88,10 @@ def parallel_ARIMA_gridsearch(
         'SMAPE_value': [],
         'MBD_prediction': [],
         'MBD_inputs': [],
-        'MBD_actual': []
+        'MBD_actual': [],
+        'fit_residuals': [],
+        'AIC': [],
+        'BIC': []
     }
 
     # Loop on model parameters
@@ -103,10 +109,13 @@ def parallel_ARIMA_gridsearch(
                     result = bootstrap_funcs.bootstrap_ARIMA_smape_scores(            
                         timepoints, 
                         sample_num, 
-                        sample_size, 
+                        sample_size,
+                        index,
+                        data_type,
                         lag_order,
                         difference_degree,
                         moving_average_order,
+                        suppress_fit_warnings,
                         time_fits
                     )
 
@@ -164,7 +173,10 @@ def cleanup_ARIMA_bootstrapping_multiprocessing_pool(pool, result_objects):
         'SMAPE_value': [],
         'MBD_prediction': [],
         'MBD_inputs': [],
-        'MBD_actual': []
+        'MBD_actual': [],
+        'fit_residuals': [],
+        'AIC': [],
+        'BIC': []
     }
 
     for result in results:
