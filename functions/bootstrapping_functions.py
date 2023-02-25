@@ -265,28 +265,39 @@ def make_ARIMA_forecasts(
         if suppress_fit_warnings == True:
             warnings.simplefilter("ignore")
 
-        model = ARIMA(y_input, order=(lag_order,difference_degree,moving_average_order))
-        model_fit = model.fit()
-        model_prediction = model_fit.forecast(steps = 1)[0]
+        try:
+            model = ARIMA(y_input, order=(lag_order,difference_degree,moving_average_order))
+            model_fit = model.fit()
+            model_prediction = model_fit.forecast(steps = 1)[0]
+
+            # Collect forecast
+            block_predictions['MBD_prediction'].append(model_prediction)
+
+            # Collect 'goodness-of-fit' results
+            block_predictions['fit_residuals'].append(model_fit.resid)
+            block_predictions['AIC'].append(model_fit.aic)
+            block_predictions['BIC'].append(model_fit.bic)
+        
+        except:
+            
+            # Collect forecast
+            block_predictions['MBD_prediction'].append(np.nan)
+
+            # Collect 'goodness-of-fit' results
+            block_predictions['fit_residuals'].append([np.nan])
+            block_predictions['AIC'].append(np.nan)
+            block_predictions['BIC'].append(np.nan)
+
+        # Log for debug
+        logging.debug('')
+        logging.debug(f'Block: {block[:, index[data_type]]}')
+        logging.debug(f'Input: {y_input}')
+        logging.debug(f'Control forecast: {control_prediction}')
+        logging.debug(f'ARIMA forecast: {model_prediction}')
+            
 
     # Stop fit timer, get total dT in seconds
     dT = time.time() - start_time
-
-    # Collect forecast
-    block_predictions['MBD_prediction'].append(model_prediction)
-
-    # Log for debug
-    logging.debug('')
-    logging.debug(f'Block: {block[:, index[data_type]]}')
-    logging.debug(f'Input: {y_input}')
-    logging.debug(f'Control forecast: {control_prediction}')
-    logging.debug(f'ARIMA forecast: {model_prediction}')
-
-    # Collect 'goodness-of-fit' results
-    block_predictions['fit_residuals'].append(model_fit.resid)
-    block_predictions['AIC'].append(model_fit.aic)
-    block_predictions['BIC'].append(model_fit.bic)
-
 
     if time_fits == True:
         logging.info(f'ARIMA({lag_order}, {difference_degree}, {moving_average_order}): {dT:.2e} sec.') 
