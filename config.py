@@ -83,3 +83,10 @@ class ARIMA_model_parameters:
     n_cpus = mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)
     time_fits = True
+
+class GRU_model_parameters():
+
+    # Run specific files
+    log_file_name = 'GRU_hyperparameter_bootstrapping.log'
+    input_file_root_name = 'structured_bootstrap_blocksize'
+    output_file_root_name = 'GRU_hyperparameter_bootstrapping'
