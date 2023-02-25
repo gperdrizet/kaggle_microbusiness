@@ -1,10 +1,13 @@
 import time
 import logging
+import warnings
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
+
 from scipy import stats
 from sklearn.linear_model import Ridge
+from statsmodels.tsa.arima.model import ARIMA
 
 def two_point_smape(actual, forecast):
     '''Takes two datapoints and returns the SMAPE value for the pair'''
@@ -197,6 +200,110 @@ def make_forecasts(block, model_types, model_order, time_fits = False):
 
     return block_predictions
 
+def make_ARIMA_forecasts(
+    block,
+    index,
+    data_type,
+    lag_order,
+    difference_degree,
+    moving_average_order,
+    suppress_fit_warnings,
+    time_fits
+):
+    '''Takes block, lag and moving average order and difference degree 
+    Uses ARIMA to forecast from block, one timepoint into the future. 
+    Also returns naive, 'carry-forward' prediction for the same datapoint 
+    for comparison'''
+
+    # Holder for SMAPE values
+    block_predictions = {
+        'model_type': [],
+        'lag_order': [],
+        'difference_degree': [],
+        'moving_average_order': [],
+        'MBD_prediction': [],
+        'MBD_inputs': [],
+        'fit_residuals': [],
+        'AIC': [],
+        'BIC': []
+    }
+
+    # Get input data from block, up to one datapoint before
+    # the end of the timeseries (this will be the forecast)
+    y_input = list(block[:-1, index[data_type]])
+
+    # Make the 'control' prediction - i.e. the second to last
+    # value from the block
+    control_prediction = block[-2, index[data_type]]
+
+    # Get prediction for naive control. Note: these are indexes
+    # so model_order gets the model_order th element (zero anchored)
+    block_predictions['model_type'].append('control')
+    block_predictions['lag_order'].append(lag_order)
+    block_predictions['difference_degree'].append(difference_degree)
+    block_predictions['moving_average_order'].append(moving_average_order)
+    block_predictions['MBD_inputs'].append(y_input)
+    block_predictions['MBD_prediction'].append(control_prediction)
+
+    # Add placeholder values for 'goodness-of-fit' columns for control
+    block_predictions['fit_residuals'].append([0])
+    block_predictions['AIC'].append(0)
+    block_predictions['BIC'].append(0)
+
+    # Add model info. to results
+    block_predictions['model_type'].append('ARIMA')
+    block_predictions['lag_order'].append(lag_order)
+    block_predictions['difference_degree'].append(difference_degree)
+    block_predictions['moving_average_order'].append(moving_average_order)
+    block_predictions['MBD_inputs'].append(y_input)
+
+    # Start fit timer
+    start_time = time.time()
+
+    with warnings.catch_warnings():
+
+        if suppress_fit_warnings == True:
+            warnings.simplefilter("ignore")
+
+        try:
+            model = ARIMA(y_input, order=(lag_order,difference_degree,moving_average_order))
+            model_fit = model.fit()
+            model_prediction = model_fit.forecast(steps = 1)[0]
+
+            # Collect forecast
+            block_predictions['MBD_prediction'].append(model_prediction)
+
+            # Collect 'goodness-of-fit' results
+            block_predictions['fit_residuals'].append(model_fit.resid)
+            block_predictions['AIC'].append(model_fit.aic)
+            block_predictions['BIC'].append(model_fit.bic)
+        
+        except:
+            
+            # Collect forecast
+            block_predictions['MBD_prediction'].append(np.nan)
+
+            # Collect 'goodness-of-fit' results
+            block_predictions['fit_residuals'].append([np.nan])
+            block_predictions['AIC'].append(np.nan)
+            block_predictions['BIC'].append(np.nan)
+
+        # Log for debug
+        logging.debug('')
+        logging.debug(f'Block: {block[:, index[data_type]]}')
+        logging.debug(f'Input: {y_input}')
+        logging.debug(f'Control forecast: {control_prediction}')
+        logging.debug(f'ARIMA forecast: {model_prediction}')
+            
+
+    # Stop fit timer, get total dT in seconds
+    dT = time.time() - start_time
+
+    if time_fits == True:
+        logging.info(f'ARIMA({lag_order}, {difference_degree}, {moving_average_order}): {dT:.2e} sec.') 
+
+    return block_predictions
+
 def smape_score_models(
         sample, 
         model_types, 
@@ -246,6 +353,64 @@ def smape_score_models(
 
     return block_data
 
+def smape_score_ARIMA_models(
+        sample,
+        index,
+        data_type,
+        lag_order,
+        difference_degree,
+        moving_average_order,
+        suppress_fit_warnings,
+        time_fits
+):
+    '''Takes a sample of blocks, makes forecast for each 
+    and collects resulting SMAPE values'''
+
+    # Holder for SMAPE values
+    block_data = {
+        'model_type': [],
+        'lag_order': [],
+        'difference_degree': [],
+        'moving_average_order': [],
+        'SMAPE_value': [],
+        'MBD_prediction': [],
+        'MBD_inputs': [],
+        'MBD_actual': [],
+        'fit_residuals': [],
+        'AIC': [],
+        'BIC': []
+    }
+
+    for block_num in range(sample.shape[0]):
+
+        # Get the forecasted value(s)
+        block_predictions = make_ARIMA_forecasts(
+            sample[block_num],
+            index,
+            data_type,
+            lag_order,
+            difference_degree,
+            moving_average_order,
+            suppress_fit_warnings,
+            time_fits
+        )
+
+        # Collect predictions, input data and model info.
+        for key, value in block_predictions.items():
+            block_data[key].extend(value)
+
+        # Get the true value and add to data
+        actual_value = sample[block_num, -1, index['microbusiness_density']]
+
+        # Get and collect SMAPE value for models
+        for value in block_predictions['MBD_prediction']:
+
+            smape_value = two_point_smape(actual_value, value)
+            block_data['SMAPE_value'].append(smape_value)
+            block_data['MBD_actual'].append(actual_value)
+
+    return block_data
+
 def bootstrap_smape_scores(
         timepoints, 
         sample_num, 
@@ -255,7 +420,7 @@ def bootstrap_smape_scores(
         time_fits = False
     ):
     '''Takes bootstrapping experiment run parameters, generates random sample of 
-    blocks from timepoints and runs forecast/score for models+control returns
+    blocks from timepoints and runs forecast/score for models+control, returns
     dict of results'''
 
     logging.debug('')
@@ -287,5 +452,65 @@ def bootstrap_smape_scores(
 
     # Fill sample number in 
     sample_data['sample'].extend([sample_num] * len(result['model_type']))
+
+    return sample_data
+
+def bootstrap_ARIMA_smape_scores(
+        timepoints, 
+        sample_num, 
+        sample_size,
+        index,
+        data_type,
+        lag_order,
+        difference_degree,
+        moving_average_order,
+        suppress_fit_warnings,
+        time_fits
+    ):
+    '''Takes bootstrapping experiment run parameters, generates random sample of 
+    blocks from timepoints and runs forecast/score for models+control returns
+    dict of results'''
+
+    # logging.debug('')
+    # logging.debug(f'Worker {sample_num} starting bootstrap run.')
+
+    # Holder for sample results
+    sample_data = {
+        'sample': [],
+        'model_type': [],
+        'lag_order': [],
+        'difference_degree': [],
+        'moving_average_order': [],
+        'SMAPE_value': [],
+        'MBD_prediction': [],
+        'MBD_inputs': [],
+        'MBD_actual': [],
+        'fit_residuals': [],
+        'AIC': [],
+        'BIC': []
+    }
+
+    # Generate sample of random blocks from random timepoint
+    sample = sample_parsed_data(timepoints, sample_size)
+
+    # Do forecast and aggregate score across each block in sample
+    result = smape_score_ARIMA_models(
+        sample,
+        index,
+        data_type,
+        lag_order,
+        difference_degree,
+        moving_average_order,
+        suppress_fit_warnings,
+        time_fits
+    )
+    
+    # Add sample results
+    for key, value in result.items():
+        sample_data[key].extend(value)
+
+    # Fill sample number in using the number of lag orders reported in the
+    # results dict as a proxy for the number of rows of results
+    sample_data['sample'].extend([sample_num] * len(result['lag_order']))
 
     return sample_data
