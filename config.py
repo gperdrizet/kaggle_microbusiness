@@ -66,9 +66,9 @@ class LinearModelsBootstrappingParameters:
 class ARIMA_model_parameters:
 
     # Run specific files
-    log_file_name = 'ARIMA_hyperparameter_bootstrapping-winning_parameters.log'
+    log_file_name = 'ARIMA_hyperparameter_bootstrapping.log'
     input_file_root_name = 'structured_bootstrap_blocksize'
-    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping-winning_parameters'
+    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping'
 
     # Experiment parameters
     data_type = 'microbusiness_density'
