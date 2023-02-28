@@ -65,21 +65,32 @@ class LinearModelsBootstrappingParameters:
 class ARIMA_model_parameters:
 
     # Run specific files
-    log_file_name = 'ARIMA_hyperparameter_bootstrapping-moving_average_order.log'
+    log_file_name = 'ARIMA_hyperparameter_bootstrapping-winning_parameters.log'
     input_file_root_name = 'structured_bootstrap_blocksize'
-    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping-moving_average_order'
+    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping-winning_parameters'
 
     # Experiment parameters
     data_type = 'microbusiness_density'
     num_samples = 180
-    sample_size = 1000
+    sample_size = 3000
 
     block_sizes = [37]
-    lag_orders = [0,1,2]
-    difference_degrees = [0,1,2]
-    moving_average_orders = [0,1,2]
+    lag_orders = [0]
+    difference_degrees = [1]
+    moving_average_orders = [0]
 
     # Parallelization stuff
     n_cpus = mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)
     time_fits = True
+
+class GRU_model_parameters():
+
+    # Run specific files
+    log_file_name = 'GRU_hyperparameter_bootstrapping.log'
+    input_file_root_name = 'structured_bootstrap_blocksize'
+    output_file_root_name = 'GRU_hyperparameter_bootstrapping'
+    
+    # Data related stuff
+    input_data_type = 'microbusiness_density'
+    training_split_fraction = 0.7
