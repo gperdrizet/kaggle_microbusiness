@@ -3,6 +3,8 @@ import pandas as pd
 import statsmodels.api as sm
 import multiprocessing as mp
 
+from scipy import stats
+
 def build_OLS_data(data, model_order):
 
     # Sort each county by timepoint and take the first n (most recent) rows from each county
@@ -25,6 +27,29 @@ def OLS_prediction(data, xinput, yinput, xforecast):
 
     model = sm.OLS(data[yinput], sm.add_constant(data[xinput])).fit()
     predictions = model.predict(sm.add_constant(xforecast))
+
+    return predictions
+
+def siegel_prediction(data, xinput, yinput, xforecast):
+
+    ss = stats.siegelslopes(data[yinput], data[xinput])
+
+    predictions = []
+
+    for x in xforecast:
+        predictions.append(ss[1] + ss[0] * x)
+
+    return predictions
+
+def ts_prediction(data, xinput, yinput, xforecast):
+
+    # Fit Theil-Sen to raw data
+    ts = stats.theilslopes(data[yinput], data[xinput])
+
+    predictions = []
+
+    for x in xforecast:
+        predictions.append(ts[1] + ts[0] * x)
 
     return predictions
 
@@ -246,3 +271,32 @@ def cleanup_multiprocessing_pool(pool, result_objects):
     pool.join()
 
     return smape_scores_df
+
+def cleanup_bootstrapping_multiprocessing_pool(pool, result_objects):
+
+    # Collect results
+    results = [result.get() for result in result_objects]
+
+    # Holder for parsed sample results
+    data = {
+        'sample': [],
+        'model_type': [],
+        'model_order': [],
+        'SMAPE_values': [],
+        'detrended_SMAPE_values': [],
+        'MBD_predictions': [],
+        'detrended_MBD_predictions': [],
+        'MBD_inputs': [],
+        'detrended_MBD_inputs': [],
+        'MBD_actual': []
+    }
+
+    for result in results:
+        for key, value in result.items():
+            data[key].extend(value)
+
+    # Clean up
+    pool.close()
+    pool.join()
+
+    return data

@@ -11,3 +11,6 @@ dependencies:
   - numpy
   - statsmodels
   - seaborn
+  - scikit-learn
+  - multiprocessing-logging
+  - pyarrow
