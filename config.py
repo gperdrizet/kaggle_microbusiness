@@ -12,7 +12,7 @@ PROJECT_NAME = 'godaddy-microbusiness-density-forecasting'
 PROJECT_ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Logging stuff
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = '%(name)s:%(levelname)s - %(message)s'
 
 class DataFilePaths:
@@ -29,6 +29,7 @@ class DataFilePaths:
 
     # Parsed/formatted data for benchmarking, training and cross validation
     PARSED_DATA_PATH = f'{DATA_PATH}/parsed_data'
+    PARSED_DATA_COLUMN_INDEX = f'{PARSED_DATA_PATH}/column_index'
 
     # Contest submission files
     SUBMISSIONS_PATH = f'{DATA_PATH}/submissions'
@@ -60,3 +61,36 @@ class LinearModelsBootstrappingParameters:
 
     n_cpus = mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)
+
+class ARIMA_model_parameters:
+
+    # Run specific files
+    log_file_name = 'ARIMA_hyperparameter_bootstrapping-winning_parameters.log'
+    input_file_root_name = 'structured_bootstrap_blocksize'
+    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping-winning_parameters'
+
+    # Experiment parameters
+    data_type = 'microbusiness_density'
+    num_samples = 180
+    sample_size = 3000
+
+    block_sizes = [37]
+    lag_orders = [0]
+    difference_degrees = [1]
+    moving_average_orders = [0]
+
+    # Parallelization stuff
+    n_cpus = mp.cpu_count() - 2
+    samples_per_cpu = int(num_samples / n_cpus)
+    time_fits = True
+
+class GRU_model_parameters():
+
+    # Run specific files
+    log_file_name = 'GRU_hyperparameter_bootstrapping.log'
+    input_file_root_name = 'structured_bootstrap_blocksize'
+    output_file_root_name = 'GRU_hyperparameter_bootstrapping'
+    
+    # Data related stuff
+    input_data_type = 'microbusiness_density'
+    training_split_fraction = 0.7
