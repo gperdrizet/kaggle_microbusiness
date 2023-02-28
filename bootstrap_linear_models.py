@@ -17,8 +17,8 @@ if __name__ == '__main__':
     )
 
     # Block size used for parsed data loading needs to be 
-    # the largest model model order plus one for the forecast
-    block_size = max(params.model_orders) + 1
+    # the largest model model order plus five for the 
+    block_size = max(params.model_orders) + 5
 
     # Load parsed data
     input_file = f'{paths.PARSED_DATA_PATH}/{params.input_file_root_name}{block_size}.npy'
