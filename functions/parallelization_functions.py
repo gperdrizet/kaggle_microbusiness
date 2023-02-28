@@ -22,7 +22,8 @@ def start_multiprocessing_pool():
 
     return pool, result_objects
 
-def parallel_bootstrapped_smape(
+def parallel_bootstrapped_linear_smape(
+    index,
     timepoints, 
     sample_num, 
     sample_size, 
@@ -36,8 +37,12 @@ def parallel_bootstrapped_smape(
         'sample': [],
         'model_type': [],
         'model_order': [],
-        'SMAPE_values': [],
-        'detrended_SMAPE_values': [],
+        'total_SMAPE_values': [],
+        'public_SMAPE_value': [],
+        'private_SMAPE_values': [],
+        'detrended_total_SMAPE_values': [],
+        'detrended_public_SMAPE_value': [],
+        'detrended_private_SMAPE_values': [],
         'MBD_predictions': [],
         'detrended_MBD_predictions': [],
         'MBD_inputs': [],
@@ -47,7 +52,8 @@ def parallel_bootstrapped_smape(
 
     # Loop on model orders
     for model_order in model_orders:
-        result = bootstrap_funcs.bootstrap_smape_scores(            
+        result = bootstrap_funcs.bootstrap_linear_smape_scores(
+            index,    
             timepoints, 
             sample_num, 
             sample_size, 
@@ -138,8 +144,12 @@ def cleanup_bootstrapping_multiprocessing_pool(pool, result_objects):
         'sample': [],
         'model_type': [],
         'model_order': [],
-        'SMAPE_values': [],
-        'detrended_SMAPE_values': [],
+        'total_SMAPE_values': [],
+        'public_SMAPE_value': [],
+        'private_SMAPE_values': [],
+        'detrended_total_SMAPE_values': [],
+        'detrended_public_SMAPE_value': [],
+        'detrended_private_SMAPE_values': [],
         'MBD_predictions': [],
         'detrended_MBD_predictions': [],
         'MBD_inputs': [],

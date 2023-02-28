@@ -50,13 +50,13 @@ class LinearModelsBootstrappingParameters:
 
     # Run specific files
     log_file_name = 'linear_models_bootstrapping.log'
-    input_file_root_name = 'structured_bootstrap_blocksize'
+    input_file_root_name = 'updated_structured_bootstrap_blocksize'
     output_file_root_name = 'linear_models'
 
     # Experiment parameters
-    num_samples = 180
-    sample_size = 1500
-    model_orders = [4,8,16,32]
+    num_samples = 18
+    sample_size = 10
+    model_orders = [3,6,9]
     model_types = ['OLS', 'TS', 'Seigel', 'Ridge']
     time_fits = False
 
