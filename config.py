@@ -26,6 +26,7 @@ class DataFilePaths:
     # Data input from Kaggle and/or other sources
     DATA_SOURCES_PATH = f'{DATA_PATH}/data_sources'
     KAGGLE_DATA_PATH = f'{DATA_SOURCES_PATH}/kaggle'
+    CENSUS_DATA_PATH = f'{DATA_SOURCES_PATH}/census'
 
     # Parsed/formatted data for benchmarking, training and cross validation
     PARSED_DATA_PATH = f'{DATA_PATH}/parsed_data'
