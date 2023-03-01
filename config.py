@@ -67,7 +67,7 @@ class ARIMA_model_parameters:
 
     # Run specific files
     log_file_name = 'ARIMA_hyperparameter_bootstrapping-moving_average_order.log'
-    input_file_root_name = 'structured_bootstrap_blocksize'
+    input_file_root_name = 'updated_structured_bootstrap_blocksize'
     output_file_root_name = 'ARIMA_hyperparameter_bootstrapping-moving_average_order'
 
     # Experiment parameters
