@@ -3,6 +3,7 @@ import functions.initialization_functions as init_funcs
 import functions.parallelization_functions as parallel_funcs
 
 import logging
+import shelve
 import numpy as np
 import pandas as pd
 
@@ -11,14 +12,17 @@ if __name__ == '__main__':
     paths = conf.DataFilePaths()
     params = conf.LinearModelsBootstrappingParameters()
 
+    # Get column index for parsed data
+    index = shelve.open(paths.PARSED_DATA_COLUMN_INDEX)
+
     logger = init_funcs.start_logger(
         logfile = f'{paths.LOG_DIR}/{params.log_file_name}',
         logstart_msg = 'Starting bootstrapping run'
     )
 
     # Block size used for parsed data loading needs to be 
-    # the largest model model order plus one for the forecast
-    block_size = max(params.model_orders) + 1
+    # the largest model model order plus five for the 
+    block_size = max(params.model_orders) + 5
 
     # Load parsed data
     input_file = f'{paths.PARSED_DATA_PATH}/{params.input_file_root_name}{block_size}.npy'
@@ -55,8 +59,9 @@ if __name__ == '__main__':
     # Loop on samples, assigning each to a different worker
     for sample_num in range(params.num_samples):
 
-        result = pool.apply_async(parallel_funcs.parallel_bootstrapped_smape,
+        result = pool.apply_async(parallel_funcs.parallel_bootstrapped_linear_smape,
             args = (
+                index,
                 timepoints, 
                 sample_num, 
                 params.sample_size, 
