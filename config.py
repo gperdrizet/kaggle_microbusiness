@@ -12,7 +12,7 @@ PROJECT_NAME = 'godaddy-microbusiness-density-forecasting'
 PROJECT_ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Logging stuff
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 LOG_FORMAT = '%(name)s:%(levelname)s - %(message)s'
 
 class DataFilePaths:
