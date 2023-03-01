@@ -8,12 +8,10 @@ import numpy as np
 import pandas as pd
 import multiprocessing as mp
 
-def start_multiprocessing_pool():
+def start_multiprocessing_pool(n_cpus):
     # Instantiate multiprocessing pool to parallelize over folds
-    n_cpus = mp.cpu_count() - 2
-
     logging.info('')
-    logging.info(f'Starting processes for {n_cpus} CPUs (available - 2)')
+    logging.info(f'Starting processes for {n_cpus} CPUs.')
 
     pool = mp.Pool(processes = n_cpus)
 
@@ -24,14 +22,14 @@ def start_multiprocessing_pool():
 
 def parallel_bootstrapped_linear_smape(
     index,
-    timepoints, 
-    sample_num, 
-    sample_size, 
-    model_orders, 
+    timepoints,
+    sample_num,
+    sample_size,
+    model_orders,
     model_types,
     time_fits = False
 ):
-    
+
     # Holder for sample results
     data = {
         'sample': [],
@@ -53,11 +51,11 @@ def parallel_bootstrapped_linear_smape(
     # Loop on model orders
     for model_order in model_orders:
         result = bootstrap_funcs.bootstrap_linear_smape_scores(
-            index,    
-            timepoints, 
-            sample_num, 
-            sample_size, 
-            model_order, 
+            index,
+            timepoints,
+            sample_num,
+            sample_size,
+            model_order,
             model_types,
             time_fits
         )
@@ -82,7 +80,7 @@ def parallel_ARIMA_gridsearch(
     suppress_fit_warnings = True,
     time_fits = False
 ):
-    
+
     # Holder for sample results
     data = {
         'sample': [],
@@ -112,9 +110,9 @@ def parallel_ARIMA_gridsearch(
             for difference_degree in difference_degrees:
                 for moving_average_order in moving_average_orders:
 
-                    result = bootstrap_funcs.bootstrap_ARIMA_smape_scores(            
-                        timepoints, 
-                        sample_num, 
+                    result = bootstrap_funcs.bootstrap_ARIMA_smape_scores(
+                        timepoints,
+                        sample_num,
                         sample_size,
                         index,
                         data_type,

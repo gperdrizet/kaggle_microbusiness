@@ -7,7 +7,7 @@ Used to store things like file paths, model hyperparameters etc.'''
 
 PROJECT_NAME = 'godaddy-microbusiness-density-forecasting'
 
-# Get path to this config file so that we can define 
+# Get path to this config file so that we can define
 # other paths relative to it
 PROJECT_ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -66,24 +66,25 @@ class LinearModelsBootstrappingParameters:
 class ARIMA_model_parameters:
 
     # Run specific files
-    log_file_name = 'ARIMA_hyperparameter_bootstrapping.log'
+    log_file_name = 'ARIMA_hyperparameter_bootstrapping-moving_average_order.log'
     input_file_root_name = 'structured_bootstrap_blocksize'
-    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping'
+    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping-moving_average_order'
 
     # Experiment parameters
     data_type = 'microbusiness_density'
     num_samples = 180
-    sample_size = 3000
+    sample_size = 1000
 
-    block_sizes = [37]
-    lag_orders = [0]
-    difference_degrees = [1]
-    moving_average_orders = [0]
+    block_sizes = [32]
+    lag_orders = [0,1,2,3]
+    difference_degrees = [0,1,2,3]
+    moving_average_orders = [0,1,2,3]
 
     # Parallelization stuff
-    n_cpus = mp.cpu_count() - 2
+    n_cpus = (mp.cpu_count() - 2) // 2
     samples_per_cpu = int(num_samples / n_cpus)
-    time_fits = True
+    time_fits = False
+    suppress_fit_warnings = True
 
 class GRU_model_parameters():
 
@@ -91,7 +92,7 @@ class GRU_model_parameters():
     log_file_name = 'GRU_hyperparameter_bootstrapping.log'
     input_file_root_name = 'structured_bootstrap_blocksize'
     output_file_root_name = 'GRU_hyperparameter_bootstrapping'
-    
+
     # Data related stuff
     input_data_type = 'microbusiness_density'
     training_split_fraction = 0.7
