@@ -24,7 +24,7 @@ def two_point_smape(actual, forecast):
 def sample_parsed_data(timepoints, sample_size):
     '''Generates a random sample of sample_size from a random timepoint'''
 
-    # Initialize random seed to make sure that output is differently random each call
+    # Initialize random seed to make sure that output is different random each call
     np.random.seed()
 
     # Pick random timepoint
