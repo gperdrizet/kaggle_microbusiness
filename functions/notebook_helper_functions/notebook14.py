@@ -329,15 +329,24 @@ def sample_mean_smape_boxplot(
     hue_by: str = 'difference_degree'
 ):
 
-    # Get the best control sample mean SMAPE score from this experiment so that we can add
+    # Get the best control mean of sample SMAPE scores from this experiment so that we can add
     # it to the plots for comparison
-    sample_smape_means = sample_smape_scores_df.groupby(['model_type', 'lag_order', 'difference_degree', 'moving_average_order'])[['SMAPE_score']].mean()
-    sample_smape_means.reset_index(inplace=True, drop=False)
-    winning_control_smape_means = sample_smape_means[sample_smape_means['model_type'] == 'control'].sort_values(by=['SMAPE_score'])
-    winning_control_smape_means.reset_index(inplace=True, drop=True)
-    winning_control_smape = winning_control_smape_means['SMAPE_score'].iloc[0]
+    mean_smape_score_df = sample_smape_scores_df.groupby(['model_type', 'lag_order', 'difference_degree', 'moving_average_order'])[['SMAPE_score']].mean()
+    mean_smape_score_df.reset_index(inplace=True, drop=False)
 
-    print(f'Winning control sample mean SMAPE score: {winning_control_smape}')
+    winning_control_mean_smape = mean_smape_score_df[mean_smape_score_df['model_type'] == 'control'].sort_values(by=['SMAPE_score'])
+    winning_control_mean_smape.reset_index(inplace=True, drop=True)
+    winning_control_mean_smape = winning_control_mean_smape['SMAPE_score'].iloc[0]
+
+    # Also get the best single sample SMAPE score
+    winning_control_smape = sample_smape_scores_df[sample_smape_scores_df['model_type'] == 'control'].sort_values(by=['SMAPE_score'])
+    winning_control_smape.reset_index(inplace=True, drop=True)
+    winning_control_smape = winning_control_smape['SMAPE_score'].iloc[0]
+
+    print()
+    print(f'Winning control mean of sample SMAPE scores: {winning_control_mean_smape}')
+    print(f'Winning control single sample SMAPE score: {winning_control_smape}')
+    print()
 
     # Get condition levels 
     parameters = {
@@ -350,6 +359,8 @@ def sample_mean_smape_boxplot(
     for parameter_name, levels in parameters.items():
         print(f'{parameter_name}: {levels}')
 
+    print()
+
     # Find the experiment-wide max and min SMAPE score so that we can set a common Y-scale for all
     # of the subplots
     max_smape_score = sample_smape_scores_df[sample_smape_scores_df['model_type'] == 'ARIMA'].sort_values(by=['SMAPE_score'], ascending=False)
@@ -361,7 +372,7 @@ def sample_mean_smape_boxplot(
     min_smape_score = min_smape_score['SMAPE_score'].iloc[0]
 
     # Plot
-    fig, ax = plt.subplots(len(parameters[parameter]), 1, figsize=(8, (3.5 * len(parameters[parameter]))))
+    fig, ax = plt.subplots(len(parameters[parameter]), 1, figsize=(12, (3.5 * len(parameters[parameter]))))
 
     for plot_num, parameter_level in enumerate(parameters[parameter]):
 
@@ -374,11 +385,13 @@ def sample_mean_smape_boxplot(
         )
 
         # Set common y limit
-        ax[plot_num].set_ylim([min_smape_score - (0.01*min_smape_score), max_smape_score + (0.01*max_smape_score)])
-        ax[plot_num].set(yscale="log")
+        ax[plot_num].set_ylim([min_smape_score - (0.05*min_smape_score), max_smape_score + (0.05*max_smape_score)])
 
         # Add line for best control sample mean
-        ax[plot_num].axhline(winning_control_smape, 0, 1, color='red', label=f'Best sample mean\ncontrol SMAPE')
+        ax[plot_num].axhline(winning_control_mean_smape, 0, 1, color='red', label=f'Best control mean of\nsample SMAPE scores')
+        ax[plot_num].axhline(min_smape_score, 0, 1, color='red', linestyle='dashed',label=f'Best control single\nsample SMAPE score')
+        
+        ax[plot_num].set(yscale='log')
 
         # Labels
         ax[plot_num].set(
@@ -387,7 +400,8 @@ def sample_mean_smape_boxplot(
             title=f'{parameter} {parameter_level}'
         )
 
-        ax[plot_num].legend(title=hue_by)
+        # Put a legend to the right of the current axis
+        ax[plot_num].legend(title=hue_by, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 
     plt.tight_layout()
     
