@@ -89,19 +89,19 @@ class ARIMA_model_parameters:
 class GRU_model_parameters():
 
     # Run specific files
-    log_file_name = 'GRU_hyperparameter_bootstrapping.log'
+    log_file_name = 'GRU_hyperparameter_optimization.log'
     input_file_root_name = 'updated_structured_bootstrap_blocksize'
-    output_file_root_name = 'GRU_hyperparameter_bootstrapping'
+    output_file_root_name = 'GRU_hyperparameter_optimization'
 
     # Data related stuff
     input_data_type = 'microbusiness_density'
     block_size = 13
     forecast_horizon = 5
     num_counties = 'all'
-    test_timepoints = 1
+    testing_timepoints = 1
     training_split_fraction = 0.7
 
     # Hyperparameters
-    GRU_units = 32
+    GRU_units = 64
     learning_rate = 0.0002
     epochs = 25
