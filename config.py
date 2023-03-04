@@ -12,7 +12,7 @@ PROJECT_NAME = 'godaddy-microbusiness-density-forecasting'
 PROJECT_ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Logging stuff
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 LOG_FORMAT = '%(name)s:%(levelname)s - %(message)s'
 
 class DataFilePaths:
@@ -98,10 +98,11 @@ class GRU_model_parameters():
     block_size = 13
     forecast_horizon = 5
     num_counties = 'all'
-    testing_timepoints = 1
+    testing_timepoints = None
     training_split_fraction = 0.7
+    pad_validation_data = True
 
     # Hyperparameters
-    GRU_units = 64
+    GRU_units = 8
     learning_rate = 0.0002
-    epochs = 25
+    epochs = 2

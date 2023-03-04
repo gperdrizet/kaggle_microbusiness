@@ -12,6 +12,11 @@ import numpy as np
 from tensorflow import keras
 from tensorflow.keras import layers
 
+import sys
+sys.path.append('..')
+
+import functions.bootstrapping_functions as bootstrap_funcs
+
 # from itertools import product
 # from pandas.plotting import autocorrelation_plot
 # from statsmodels.tsa.arima.model import ARIMA
@@ -26,7 +31,9 @@ def training_validation_testing_split(
     num_counties: str = 'all',
     input_data_type: str = 'microbusiness_density',
     testing_timepoints: int = 1,
-    training_split_fraction: float = 0.7
+    training_split_fraction: float = 0.7,
+    pad_validation_data: bool = True,
+    forecast_horizon: int = 5
 ):
     '''Does training, validation, testing split on data. Also subsets feature
     columns and counties. Splits on time axis so that training data is time distal,
@@ -53,13 +60,26 @@ def training_validation_testing_split(
 
         datasets['testing'] = testing_data
 
-    # Choose split
-    split_index = int(input_data.shape[0] * training_split_fraction)
+    # Choose split, subtracting forecast horizon first to omit forecast horizon
+    # number of points between training and validation. This prevents overlap
+    # between the forecast region of the last training block and the
+    # first validation block
+    if pad_validation_data == True:
+        split_index = int((input_data.shape[0] - forecast_horizon) * training_split_fraction)
 
-    # Split data into training and validation sets using chosen index. First 
+    else:
+        split_index = int(input_data.shape[0] * training_split_fraction)
+
+    # Split data into training and validation sets using chosen index padded by
+    # the forecast horizon for the validation set start (see above). First 
     # portion becomes training, second portion is validation
     training_data = input_data[0:split_index]
-    validation_data = input_data[split_index:-1]
+
+    if pad_validation_data == True:
+        validation_data = input_data[(split_index + forecast_horizon):]
+    
+    else:
+        validation_data = input_data[split_index:]
 
     datasets['training'] = training_data
     datasets['validation'] = validation_data
@@ -70,11 +90,9 @@ def training_validation_testing_split(
     logging.info(f'Testing timepoints: {testing_timepoints}')
     logging.info(f'Split fraction: {training_split_fraction}')
     logging.info(f'Split index: {split_index}')
-    logging.info(f'Training data shape: {training_data.shape}')
-    logging.info(f'Validation data shape: {validation_data.shape}')
 
-    if testing_timepoints != None:
-        logging.info(f'Testing data shape: {testing_data.shape}')
+    for data_type, data in datasets.items():
+        logging.info(f'{data_type} data shape: {data.shape}')
 
     return datasets
 
@@ -93,14 +111,11 @@ def standardize_datasets(datasets):
     logging.info(f'Training data mean: {training_mean:.2f}, standard deviation: {training_deviation:.2f}')
 
     # Standardize the training, validation and test data
-    datasets['training'] = (datasets['training'] - training_mean) / training_deviation
-    datasets['validation'] = (datasets['validation'] - training_mean) / training_deviation
-    datasets['testing'] = (datasets['testing'] - training_mean) / training_deviation
-
     logging.info('')
-    logging.info(f"Training data, new mean: {np.mean(datasets['training']):.2f}, new standard deviation: {np.std(datasets['training']):.2f}")
-    logging.info(f"Validation data, new mean: {np.mean(datasets['validation']):.2f}, new standard deviation: {np.std(datasets['validation']):.2f}")
-    logging.info(f"Testing data, new mean: {np.mean(datasets['testing']):.2f}, new standard deviation: {np.std(datasets['testing']):.2f}")
+
+    for data_type, data in datasets.items():
+        datasets[data_type] = (data - training_mean) / training_deviation
+        logging.info(f"{data_type} data, new mean: {np.mean(datasets[data_type]):.2f}, new standard deviation: {np.std(datasets[data_type]):.2f}")
 
     return datasets
 
@@ -283,70 +298,87 @@ def make_predictions(model, datasets, forecast_horizon):
     logging.info('')
     logging.info('####### MAKING PREDICTIONS #################################')
 
-    # Fire up generators
-    training_data_generator = data_generator(datasets['training'], forecast_horizon)
-    validation_data_generator = data_generator(datasets['validation'], forecast_horizon)
-    testing_data_generator = data_generator(datasets['testing'], forecast_horizon)
+    predictions = {}
+    targets = {}
 
-    # Predict from training
-    training_predictions = model.predict(
-        training_data_generator,
-        batch_size = datasets['training'].shape[1],
-        steps = datasets['training'].shape[0]
-    )
+    for data_type, data in datasets.items():
 
-    # Predict from validation
-    validation_predictions = model.predict(
-        validation_data_generator,
-        batch_size = datasets['validation'].shape[1],
-        steps = datasets['validation'].shape[0]
-    )
+        # Predict
+        prediction = model.predict(
+            data_generator(data, forecast_horizon),
+            batch_size = data.shape[1],
+            steps = data.shape[0]
+        )
 
-    # Predict from testing
-    testing_predictions = model.predict(
-        testing_data_generator,
-        batch_size = datasets['testing'].shape[1],
-        steps = datasets['testing'].shape[0]
-    )
+        predictions[data_type] = prediction
 
-    # Get targets
-    training_targets = datasets['training'][:,:,-forecast_horizon:,:]
-    validation_targets = datasets['validation'][:,:,-forecast_horizon:,:]
-    testing_targets = datasets['testing'][:,:,-forecast_horizon:,:]
+        # Get targets
+        target = data[:,:,-forecast_horizon:,:]
+        targets[data_type] = target
 
     # Get mean and standard deviation from training data
     training_mean = np.mean(datasets['training'])
     training_deviation = np.std(datasets['training'])
 
     # Unstandardize everything
-    training_predictions = (training_predictions * training_deviation) + training_mean
-    training_targets = (training_targets * training_deviation) + training_mean
-    validation_targets = (validation_targets * training_deviation) + training_mean
-    validation_predictions = (validation_predictions * training_deviation) + training_mean
-    testing_targets = (testing_targets * training_deviation) + training_mean
-    testing_predictions = (testing_predictions * training_deviation) + training_mean
+    for output in [predictions, targets]:
+        for data_type, data in output.items():
+            output[data_type] = (data * training_deviation) + training_mean
 
-    logging.info('')
-    logging.info(f"Training dataset: {datasets['training'].shape}")
-    logging.info(f'Training targets: {training_targets.shape}')
-    logging.info(f'training predictions: {training_predictions.shape}')
-    logging.info('')
-    logging.info(f"Validation dataset: {datasets['validation'].shape}")
-    logging.info(f'Validation targets: {validation_targets.shape}')
-    logging.info(f'Validation predictions: {validation_predictions.shape}')
-    logging.info('')
-    logging.info(f"Testing dataset: {datasets['testing'].shape}")
-    logging.info(f'Testing targets: {testing_targets.shape}')
-    logging.info(f'Testing predictions: {testing_predictions.shape}')
+    # Log shape info
+    for data_type, data in datasets.items():
 
-    # Flatten everything and add to predictions dict
-    predictions = {}
+        logging.info('')
+        logging.info(f'{data_type} dataset: {datasets[data_type].shape}')
+        logging.info(f'{data_type} targets: {targets[data_type].shape}')
+        logging.info(f'{data_type} predictions: {predictions[data_type].shape}')
 
-    predictions['training_predictions'] = training_predictions
-    predictions['training_targets'] = training_targets
-    predictions['validation_predictions'] = validation_predictions
-    predictions['validation_targets'] = validation_targets
-    predictions['testing_predictions'] = testing_predictions
-    predictions['testing_targets'] = testing_targets
+    return predictions, targets
 
-    return predictions
+def make_control_predictions(
+    datasets,
+    data_type: str = 'validation',
+    forecast_horizon: int = 5
+):
+    '''Makes naive, carry-forward predictions for dataset.'''
+
+    control_validation_prediction_values = datasets[data_type][:,:,[-(forecast_horizon + 1)],0]
+    county_level = []
+
+    for i in range(control_validation_prediction_values.shape[0]):
+
+        timepoint_level = []
+
+        for j in range(control_validation_prediction_values.shape[1]):
+
+            prediction_value = control_validation_prediction_values[i][j][0]
+            timepoint_level.append([prediction_value] * forecast_horizon)
+
+        county_level.append(timepoint_level)
+
+    expanded_control_validation_prediction_values = np.array(county_level)
+    expanded_control_validation_prediction_values = expanded_control_validation_prediction_values.reshape(-1, expanded_control_validation_prediction_values.shape[-1])
+
+    return expanded_control_validation_prediction_values
+
+def private_leaderboard_SMAPE_score(
+    targets,
+    predictions,
+    indexes
+):
+    '''Computes SMAPE score for predictions at indexes.'''
+
+    SMAPE_values = []
+    count = 1
+
+    for actual, forecast in zip(targets, predictions):
+
+        for index in indexes:
+            SMAPE_value = bootstrap_funcs.two_point_smape(actual[index], forecast[index])
+            SMAPE_values.append(SMAPE_value)
+
+            count += 1
+
+    SMAPE_score = (100/count) * sum(SMAPE_values)
+
+    return SMAPE_score
