@@ -123,6 +123,127 @@ def make_batch_major(datasets):
 
     return datasets
 
+def data_generator(data, forecast_horizon):
+    '''Generates pairs of X, Y (input, target) datapoints
+    from batch major data'''
+    
+    # Don't stop
+    while True:
+        # Loop on counties
+        for i in range(data.shape[0]):
+                
+            X = data[i,:,:-forecast_horizon,:]
+            Y = data[i,:,-forecast_horizon:,:]
+
+            yield (X, Y)
+
+def make_training_callbacks(
+    save_tensorboard_log: bool = False,
+    tensorboard_log_dir: str = './logs/tensorboard/',
+    tensorboard_histogram_freq: int = 1,
+    save_model_checkpoints: bool = False,
+    model_checkpoint_dir: str = './logs/model_checkpoints/',
+    model_checkpoint_threshold: float = 0.1,
+    model_checkpoint_variable: str = 'val_MAE',
+    early_stopping: bool = False,
+    early_stopping_monitor: str = 'val_MAE', 
+    early_stopping_min_delta: float = 0.01, 
+    early_stopping_patience: int = 10,
+    verbose: int = 0
+):
+    
+    # Define some callbacks to improve training.
+    callbacks = []
+
+    # Log training progress to tensorboard
+    if save_tensorboard_log == True:
+
+        tensorboard = tf.keras.callbacks.TensorBoard(
+            log_dir = tensorboard_log_dir, 
+            histogram_freq = tensorboard_histogram_freq
+         )
+
+        callbacks.append(tensorboard)
+
+    # Save model checkpoints during training
+    if save_model_checkpoints == True:
+
+        # Include the epoch in the file name (uses `str.format`)
+        checkpoint_path = f'{model_checkpoint_dir}' + '/cp-{epoch:06d}.ckpt'
+        # checkpoint_dir = os.path.dirname(checkpoint_path)
+
+        # Create a callback that saves the winning model's weights
+        cp_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath = checkpoint_path,
+            save_weights_only = True,
+            monitor = model_checkpoint_variable,
+            mode = 'min',
+            save_best_only = True,
+            initial_value_threshold = model_checkpoint_threshold,
+            verbose = verbose
+        )
+
+        callbacks.append(cp_callback)
+
+    # Stop training early if loss values don't improve
+    if early_stopping == True:
+
+        early_stopping = keras.callbacks.EarlyStopping(
+            monitor = early_stopping_monitor, 
+            min_delta = early_stopping_min_delta, 
+            patience = early_stopping_patience,
+            verbose = verbose
+        )
+
+        callbacks.append(early_stopping)
+
+    return callbacks
+
+def log_run_info(
+    datasets,
+    forecast_horizon: int = 5,
+    epochs: int = 10,
+    learning_rate: float = 0.0002,
+    GRU_units: int = 64,
+    training_batch_size: int = 15,
+    training_batches: int = 3135,
+    validation_batch_size: int = 7,
+    validation_batches: int = 3235
+):
+    
+    # Start generators and grab a sample data points to derive network parameters
+    training_data_generator = data_generator(datasets['training'], forecast_horizon)
+    training_sample = next(training_data_generator)
+    validation_data_generator = data_generator(datasets['validation'], forecast_horizon)
+    validation_sample = next(validation_data_generator)
+
+    # Log dataset's shape details
+    logging.info('')
+    logging.info('####### DATA SHAPE ##########################################')
+    logging.info('')
+    logging.info(f"Training dataset: {datasets['training'].shape}")
+    logging.info(f"Validation dataset: {datasets['validation'].shape}")
+    logging.info('')
+    logging.info(f'Training input: {training_sample[0].shape}')
+    logging.info(f'Training target: {training_sample[1].shape}')
+    logging.info('')
+    logging.info(f'Validation input: {validation_sample[0].shape}')
+    logging.info(f'Validation target: {validation_sample[1].shape}')
+
+    # Log run parameters
+    logging.info('')
+    logging.info('####### RUN HYPERPARAMETERS #################################')
+    logging.info('')
+    logging.info(f'Epochs: {epochs}')
+    logging.info(f'Learning rate: {learning_rate}')
+    logging.info(f'GRU units: {GRU_units}')
+    logging.info(f'Training batch size: {training_batch_size}')
+    logging.info(f'Training batches: {training_batches}')
+    logging.info(f'Validation batch size: {validation_batch_size}')
+    logging.info(f'Validation batches: {validation_batches}')
+
+    return True
+
 def build_GRU(
     GRU_units: int = 64,
     learning_rate: float = 0.0002,
@@ -194,20 +315,6 @@ def build_GRU(
 
     return model
 
-def data_generator(data, forecast_horizon):
-    '''Generates pairs of X, Y (input, target) datapoints
-    from batch major data'''
-    
-    # Don't stop
-    while True:
-        # Loop on counties
-        for i in range(data.shape[0]):
-                
-            X = data[i,:,:-forecast_horizon,:]
-            Y = data[i,:,-forecast_horizon:,:]
-
-            yield (X, Y)
-
 def train_GRU(
     datasets,
     forecast_horizon: int = 5,
@@ -225,101 +332,55 @@ def train_GRU(
     early_stopping_monitor: str = 'val_MAE', 
     early_stopping_min_delta: float = 0.01, 
     early_stopping_patience: int = 10,
-    verbose: bool = True
-
+    verbose: int = 0
 ):
     '''Does single training run of GRU based neural network'''
 
-    # Start generators and grab a sample data points to
-    # derive network parameters
-    training_data_generator = data_generator(datasets['training'], forecast_horizon)
-    training_sample = next(training_data_generator)
-
-    validation_data_generator = data_generator(datasets['validation'], forecast_horizon)
-    validation_sample = next(validation_data_generator)
-
-    # Check dataset's overall shape
-    logging.info('')
-    logging.info('####### DATA SHAPE ##########################################')
-    logging.info('')
-    logging.info(f"Training dataset: {datasets['training'].shape}")
-    logging.info(f"Validation dataset: {datasets['validation'].shape}")
-    logging.info('')
-    logging.info(f'Training input: {training_sample[0].shape}')
-    logging.info(f'Training target: {training_sample[1].shape}')
-    logging.info('')
-    logging.info(f'Validation input: {validation_sample[0].shape}')
-    logging.info(f'Validation target: {validation_sample[1].shape}')
-
-    # Get and log run parameters
-    output_units = training_sample[1].shape[1]
+    # Get some run parameters from dataset
+    output_units = forecast_horizon
     training_batch_size = datasets['training'].shape[1]
     training_batches = datasets['training'].shape[0]
     validation_batch_size = datasets['validation'].shape[1]
     validation_batches = datasets['validation'].shape[0]
 
-    logging.info('')
-    logging.info('####### RUN PARAMETERS #####################################')
-    logging.info('')
-    logging.info(f'Epochs: {epochs}')
-    logging.info(f'Learning rate: {learning_rate}')
-    logging.info(f'GRU units: {GRU_units}')
-    logging.info(f'Training batch size: {training_batch_size}')
-    logging.info(f'Training batches: {training_batches}')
-    logging.info(f'Validation batch size: {validation_batch_size}')
-    logging.info(f'Validation batches: {validation_batches}')
+    # Write some run info to log
+    log_run_info(
+        datasets,
+        forecast_horizon = forecast_horizon,
+        epochs = epochs,
+        learning_rate = learning_rate,
+        GRU_units = GRU_units,
+        training_batch_size = training_batch_size,
+        training_batches = training_batches,
+        validation_batch_size = validation_batch_size,
+        validation_batches = validation_batches
+    )
+
+    # Setup training callbacks
+    callbacks = make_training_callbacks(
+        save_tensorboard_log = save_tensorboard_log,
+        tensorboard_log_dir = tensorboard_log_dir,
+        tensorboard_histogram_freq = tensorboard_histogram_freq,
+        save_model_checkpoints = save_model_checkpoints,
+        model_checkpoint_dir = model_checkpoint_dir,
+        model_checkpoint_threshold = model_checkpoint_threshold,
+        model_checkpoint_variable = model_checkpoint_variable,
+        early_stopping = early_stopping,
+        early_stopping_monitor = early_stopping_monitor, 
+        early_stopping_min_delta = early_stopping_min_delta, 
+        early_stopping_patience = early_stopping_patience,
+        verbose = verbose
+    )
 
     # Build the model
     model = build_GRU(
         GRU_units = GRU_units,
         learning_rate = learning_rate,
-        input_shape = [training_sample[0].shape[1],training_sample[0].shape[2]],
+        input_shape = [(datasets['training'].shape[2] - forecast_horizon), datasets['training'].shape[3]],
         output_units = output_units
     )
 
-    # Define some callbacks to improve training.
-    callbacks = []
-
-    if save_tensorboard_log == True:
-
-        tensorboard = tf.keras.callbacks.TensorBoard(
-            log_dir = tensorboard_log_dir, 
-            histogram_freq = tensorboard_histogram_freq
-         )
-
-        callbacks.append(tensorboard)
-
-    if save_model_checkpoints == True:
-
-        # Include the epoch in the file name (uses `str.format`)
-        checkpoint_path = f'{model_checkpoint_dir}' + '/cp-{epoch:06d}.ckpt'
-        # checkpoint_dir = os.path.dirname(checkpoint_path)
-
-        # Create a callback that saves the winning model's weights
-        cp_callback = tf.keras.callbacks.ModelCheckpoint(
-            filepath = checkpoint_path,
-            save_weights_only = True,
-            monitor = model_checkpoint_variable,
-            mode = 'min',
-            save_best_only = True,
-            initial_value_threshold = model_checkpoint_threshold,
-            verbose = verbose
-        )
-
-        callbacks.append(cp_callback)
-
-    if early_stopping == True:
-
-        early_stopping = keras.callbacks.EarlyStopping(
-            monitor = early_stopping_monitor, 
-            min_delta = early_stopping_min_delta, 
-            patience = early_stopping_patience,
-            verbose = verbose
-        )
-
-        callbacks.append(early_stopping)
-
-    # Re-fire data generators for training and validation
+    # Fire data generators for training and validation
     training_data_generator = data_generator(datasets['training'], forecast_horizon)
     validation_data_generator = data_generator(datasets['validation'], forecast_horizon)
 
