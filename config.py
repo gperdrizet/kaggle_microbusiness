@@ -17,8 +17,10 @@ LOG_FORMAT = '%(name)s:%(levelname)s - %(message)s'
 
 class DataFilePaths:
 
-    # Log file dir
-    LOG_DIR = f'{PROJECT_ROOT_PATH}/logs/'
+    # Logs
+    LOG_DIR = f'{PROJECT_ROOT_PATH}/logs'
+    TENSORBOARD_LOGS = f'{LOG_DIR}/tensorboard'
+    MODEL_CHECKPOINTS = f'{LOG_DIR}/model_checkpoints'
 
     # Data related files & paths
     DATA_PATH = f'{PROJECT_ROOT_PATH}/data'
@@ -102,7 +104,22 @@ class GRU_model_parameters():
     training_split_fraction = 0.7
     pad_validation_data = True
 
+    # Run options
+    verbose = 0
+
+    save_tensorboard_log = True
+    tensorboard_histogram_freq = 1
+
+    save_model_checkpoints = True
+    model_checkpoint_threshold = 0.1,
+    model_checkpoint_variable = 'val_MAE',
+
+    early_stopping = True
+    early_stopping_monitor = 'val_MAE'
+    early_stopping_min_delta = 0.01
+    early_stopping_patience = 2
+
     # Hyperparameters
     GRU_units = 8
     learning_rate = 0.0002
-    epochs = 2
+    epochs = 100

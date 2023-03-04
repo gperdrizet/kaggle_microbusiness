@@ -1,29 +1,20 @@
-# import config as conf
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/usr/lib/cuda/'
 
 import logging
 import numpy as np
-# import string
-# import warnings
-# import shelve
-# import numpy as np
-# import pandas as pd
-# import matplotlib.pyplot as plt
-# import seaborn as sns
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+
+# Note: seems to be needed to suppress warnings from modelcheckpoint callback
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 import sys
 sys.path.append('..')
 
 import functions.bootstrapping_functions as bootstrap_funcs
-
-# from itertools import product
-# from pandas.plotting import autocorrelation_plot
-# from statsmodels.tsa.arima.model import ARIMA
-
-# paths = conf.DataFilePaths()
-# params = conf.GRU_model_parameters()
-
 
 def training_validation_testing_split(
     index,
@@ -223,6 +214,18 @@ def train_GRU(
     epochs: int = 10,
     GRU_units: int = 64,
     learning_rate: float = 0.002,
+    save_tensorboard_log: bool = False,
+    tensorboard_log_dir: str = './logs/tensorboard/',
+    tensorboard_histogram_freq: int = 1,
+    save_model_checkpoints: bool = False,
+    model_checkpoint_dir: str = './logs/model_checkpoints/',
+    model_checkpoint_threshold: float = 0.1,
+    model_checkpoint_variable: str = 'val_MAE',
+    early_stopping: bool = False,
+    early_stopping_monitor: str = 'val_MAE', 
+    early_stopping_min_delta: float = 0.01, 
+    early_stopping_patience: int = 10,
+    verbose: bool = True
 
 ):
     '''Does single training run of GRU based neural network'''
@@ -248,8 +251,7 @@ def train_GRU(
     logging.info(f'Validation input: {validation_sample[0].shape}')
     logging.info(f'Validation target: {validation_sample[1].shape}')
 
-    # Check run parameters
-    # Run parameters
+    # Get and log run parameters
     output_units = training_sample[1].shape[1]
     training_batch_size = datasets['training'].shape[1]
     training_batches = datasets['training'].shape[0]
@@ -260,6 +262,8 @@ def train_GRU(
     logging.info('####### RUN PARAMETERS #####################################')
     logging.info('')
     logging.info(f'Epochs: {epochs}')
+    logging.info(f'Learning rate: {learning_rate}')
+    logging.info(f'GRU units: {GRU_units}')
     logging.info(f'Training batch size: {training_batch_size}')
     logging.info(f'Training batches: {training_batches}')
     logging.info(f'Validation batch size: {validation_batch_size}')
@@ -273,6 +277,48 @@ def train_GRU(
         output_units = output_units
     )
 
+    # Define some callbacks to improve training.
+    callbacks = []
+
+    if save_tensorboard_log == True:
+
+        tensorboard = tf.keras.callbacks.TensorBoard(
+            log_dir = tensorboard_log_dir, 
+            histogram_freq = tensorboard_histogram_freq
+         )
+
+        callbacks.append(tensorboard)
+
+    if save_model_checkpoints == True:
+
+        # Include the epoch in the file name (uses `str.format`)
+        checkpoint_path = f'{model_checkpoint_dir}' + '/cp-{epoch:06d}.ckpt'
+        # checkpoint_dir = os.path.dirname(checkpoint_path)
+
+        # Create a callback that saves the winning model's weights
+        cp_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath = checkpoint_path,
+            save_weights_only = True,
+            monitor = model_checkpoint_variable,
+            mode = 'min',
+            save_best_only = True,
+            initial_value_threshold = model_checkpoint_threshold,
+            verbose = verbose
+        )
+
+        callbacks.append(cp_callback)
+
+    if early_stopping == True:
+
+        early_stopping = keras.callbacks.EarlyStopping(
+            monitor = early_stopping_monitor, 
+            min_delta = early_stopping_min_delta, 
+            patience = early_stopping_patience,
+            verbose = verbose
+        )
+
+        callbacks.append(early_stopping)
+
     # Re-fire data generators for training and validation
     training_data_generator = data_generator(datasets['training'], forecast_horizon)
     validation_data_generator = data_generator(datasets['validation'], forecast_horizon)
@@ -285,7 +331,9 @@ def train_GRU(
         steps_per_epoch = training_batches,
         validation_data = validation_data_generator,
         validation_batch_size = validation_batch_size,
-        validation_steps = validation_batches
+        validation_steps = validation_batches,
+        callbacks = callbacks,
+        verbose = verbose
     )
 
     return model, history
