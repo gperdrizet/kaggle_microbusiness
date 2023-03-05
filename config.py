@@ -66,9 +66,9 @@ class LinearModelsBootstrappingParameters:
 class ARIMA_model_parameters:
 
     # Run specific files
-    log_file_name = 'ARIMA_hyperparameter_bootstrapping-block_size.log'
+    log_file_root_name = 'ARIMA_hyperparameter_bootstrapping'
     input_file_root_name = 'updated_structured_bootstrap_blocksize'
-    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping-block_size'
+    output_file_root_name = 'ARIMA_hyperparameter_bootstrapping'
 
     # Experiment parameters
     data_type = 'microbusiness_density'
@@ -81,7 +81,7 @@ class ARIMA_model_parameters:
     moving_average_orders = [0]
 
     # Parallelization stuff
-    n_cpus = mp.cpu_count() - 2
+    n_cpus = 9 #mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)
     time_fits = False
     suppress_fit_warnings = True
