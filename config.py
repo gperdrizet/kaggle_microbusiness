@@ -47,7 +47,6 @@ class DataFilePaths:
     BOOTSTRAPPING_RESULTS_PATH = f'{DATA_PATH}/bootstrapping_results'
 
 # Linear model bootstrapping parameters
-
 class LinearModelsBootstrappingParameters:
 
     # Run specific files
@@ -107,12 +106,15 @@ class GRU_model_parameters():
     plot_point_size = 8
 
     # Run options
+    num_GPUs = 4
     verbose = 0
 
     save_tensorboard_log = True
+    tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization'
     tensorboard_histogram_freq = 1
 
     save_model_checkpoints = True
+    model_checkpoint_dir = f'{PROJECT_ROOT_PATH}/logs/model_checkpoints/GRU_hyperparameter_optimization'
     model_checkpoint_threshold = 0.1,
     model_checkpoint_variable = 'val_loss',
 
@@ -125,3 +127,10 @@ class GRU_model_parameters():
     GRU_units = 64
     learning_rate = 0.0002
     epochs = 100
+
+    # Hyperparameters for optimization
+    optimization_data_output_file = f'{PROJECT_ROOT_PATH}/data/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate.parquet'
+    iterations = 3
+    block_sizes = [13, 21]
+    GRU_unit_nums = [16, 32, 64, 128]
+    learning_rates = [0.001, 0.0001, 0.00001]
