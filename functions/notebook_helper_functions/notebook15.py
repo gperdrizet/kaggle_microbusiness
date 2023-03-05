@@ -108,7 +108,7 @@ def standardize_datasets(datasets):
         datasets[data_type] = (data - training_mean) / training_deviation
         logging.info(f"{data_type} data, new mean: {np.mean(datasets[data_type]):.2f}, new standard deviation: {np.std(datasets[data_type]):.2f}")
 
-    return datasets
+    return datasets, training_mean, training_deviation
 
 def make_batch_major(datasets):
     '''Makes datasets batch major by swapping 0th and 2nd axis'''
@@ -129,6 +129,7 @@ def data_generator(data, forecast_horizon):
     
     # Don't stop
     while True:
+
         # Loop on counties
         for i in range(data.shape[0]):
                 
@@ -399,7 +400,7 @@ def train_GRU(
 
     return model, history
 
-def make_predictions(model, datasets, forecast_horizon):
+def make_predictions(model, datasets, forecast_horizon, training_mean, training_deviation):
     '''Uses a trained model to make predictions for training, 
     validation and testing datasets. Returns dict containing
     un-standardized and flattened predictions and targets for each'''
@@ -412,34 +413,52 @@ def make_predictions(model, datasets, forecast_horizon):
 
     for data_type, data in datasets.items():
 
-        # Predict
         prediction = model.predict(
             data_generator(data, forecast_horizon),
             batch_size = data.shape[1],
-            steps = data.shape[0]
+            steps = data.shape[0],
+            verbose = 0
         )
 
-        predictions[data_type] = prediction
+        predictions[f'GRU_{data_type}'] = prediction
+
+        # Predict with control
+        control_prediction = make_control_predictions(
+            datasets,
+            data_type = data_type,
+            forecast_horizon = forecast_horizon
+        )
+
+        predictions[f'control_{data_type}'] = control_prediction
 
         # Get targets
-        target = data[:,:,-forecast_horizon:,:]
-        targets[data_type] = target
-
-    # Get mean and standard deviation from training data
-    training_mean = np.mean(datasets['training'])
-    training_deviation = np.std(datasets['training'])
+        target = data[:,:,-forecast_horizon:,0]
+        targets[data_type] = target.reshape(-1, target.shape[-1])
 
     # Unstandardize everything
-    for output in [predictions, targets]:
-        for data_type, data in output.items():
-            output[data_type] = (data * training_deviation) + training_mean
+    for data_type, data in targets.items():
+        targets[data_type] = (data * training_deviation) + training_mean
+
+    for data_type, data in predictions.items():
+        predictions[data_type] = (data * training_deviation) + training_mean
 
     # Log shape info
+    logging.info('')
+
     for data_type, data in datasets.items():
 
-        logging.info('')
         logging.info(f'{data_type} dataset: {datasets[data_type].shape}')
+
+    logging.info('')
+
+    for data_type, data in targets.items():
+
         logging.info(f'{data_type} targets: {targets[data_type].shape}')
+
+    logging.info('')
+
+    for data_type, data in predictions.items():
+
         logging.info(f'{data_type} predictions: {predictions[data_type].shape}')
 
     return predictions, targets
@@ -470,12 +489,12 @@ def make_control_predictions(
 
     return expanded_control_validation_prediction_values
 
-def private_leaderboard_SMAPE_score(
+def aggregate_SMAPE_score(
     targets,
     predictions,
-    indexes
+    indexes: list = [2,3,4]
 ):
-    '''Computes SMAPE score for predictions at indexes.'''
+    '''Computes SMAPE score for predictions at indexes across all timepoints in all batches.'''
 
     SMAPE_values = []
     count = 1

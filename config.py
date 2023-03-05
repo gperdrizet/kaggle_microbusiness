@@ -74,8 +74,8 @@ class ARIMA_model_parameters:
 
     # Experiment parameters
     data_type = 'microbusiness_density'
-    num_samples = 1800
-    sample_size = 1000
+    num_samples = 180
+    sample_size = 500
 
     block_sizes = [8,16,32]
     lag_orders = [0,1,2,3,4]
@@ -83,7 +83,7 @@ class ARIMA_model_parameters:
     moving_average_orders = [0]
 
     # Parallelization stuff
-    n_cpus = mp.cpu_count() - 2
+    n_cpus = 9 #mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)
     time_fits = False
     suppress_fit_warnings = True
@@ -104,6 +104,8 @@ class GRU_model_parameters():
     training_split_fraction = 0.7
     pad_validation_data = True
 
+    plot_point_size = 8
+
     # Run options
     verbose = 0
 
@@ -112,14 +114,14 @@ class GRU_model_parameters():
 
     save_model_checkpoints = True
     model_checkpoint_threshold = 0.1,
-    model_checkpoint_variable = 'val_MAE',
+    model_checkpoint_variable = 'val_loss',
 
     early_stopping = True
-    early_stopping_monitor = 'val_MAE'
+    early_stopping_monitor = 'val_loss'
     early_stopping_min_delta = 0.01
-    early_stopping_patience = 2
+    early_stopping_patience = 10
 
     # Hyperparameters
-    GRU_units = 8
+    GRU_units = 64
     learning_rate = 0.0002
     epochs = 100
