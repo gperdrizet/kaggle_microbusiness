@@ -185,7 +185,8 @@ def make_training_callbacks(
             mode = 'min',
             save_best_only = True,
             initial_value_threshold = model_checkpoint_threshold,
-            verbose = 1
+            verbose = verbose,
+            save_freq = 'epoch'
         )
 
         callbacks.append(cp_callback)

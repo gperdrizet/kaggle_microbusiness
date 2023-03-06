@@ -107,7 +107,7 @@ class GRU_model_parameters():
 
     # Run options
     num_GPUs = 4
-    verbose = 1
+    verbose = 0
 
     save_tensorboard_log = True
     tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization'
@@ -118,19 +118,19 @@ class GRU_model_parameters():
     model_checkpoint_threshold = 1
     model_checkpoint_variable = 'val_loss'
 
-    early_stopping = False
+    early_stopping = True
     early_stopping_monitor = 'val_loss'
-    early_stopping_min_delta = 0.1
-    early_stopping_patience = 10
+    early_stopping_min_delta = 0.01
+    early_stopping_patience = 5
 
     # Hyperparameters
     GRU_units = 64
     learning_rate = 0.0002
-    epochs = 10
+    epochs = 50
 
     # Hyperparameters for optimization
     optimization_data_output_file = f'{PROJECT_ROOT_PATH}/data/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate.parquet'
-    iterations = 3
-    block_sizes = [13, 21]
+    iterations = 5
+    block_sizes = [9, 13, 21, 37]
     GRU_unit_nums = [16, 32, 64, 128]
     learning_rates = [0.001, 0.0001, 0.00001]

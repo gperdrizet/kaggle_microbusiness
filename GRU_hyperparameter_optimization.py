@@ -69,7 +69,7 @@ if __name__ == '__main__':
             GPU = result[0]
             free_GPUs.append(GPU)
 
-            print(f'\n\n Added gpu {GPU} back to free gpus: {free_GPUs}', end = '')
+            #print(f'\n\n Added gpu {GPU} back to free gpus: {free_GPUs}', end = '')
             
         except Exception as e:
             print(f'Caught exception from GPU while saving results')
@@ -88,10 +88,15 @@ if __name__ == '__main__':
     # Instantiate pool
     pool = mp.Pool(processes = params.num_GPUs)
 
+    print('')
+
     # Loop on the parameter sets
-    while True:
+    while len(run_parameter_sets) > 0:
 
         if len(free_GPUs) > 0:
+
+            # When starting a new run, print the number of parameter sets remaining
+            print(f'{len(run_parameter_sets)} parameter sets remaining.', end='\r')
             gpu = free_GPUs.pop(0)
 
             # Get and unpack parameter set
