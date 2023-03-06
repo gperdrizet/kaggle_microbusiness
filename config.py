@@ -12,7 +12,7 @@ PROJECT_NAME = 'godaddy-microbusiness-density-forecasting'
 PROJECT_ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Logging stuff
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = '%(name)s:%(levelname)s - %(message)s'
 
 class DataFilePaths:
@@ -107,7 +107,7 @@ class GRU_model_parameters():
 
     # Run options
     num_GPUs = 4
-    verbose = 0
+    verbose = 1
 
     save_tensorboard_log = True
     tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization'
@@ -115,18 +115,18 @@ class GRU_model_parameters():
 
     save_model_checkpoints = True
     model_checkpoint_dir = f'{PROJECT_ROOT_PATH}/logs/model_checkpoints/GRU_hyperparameter_optimization'
-    model_checkpoint_threshold = 0.1,
-    model_checkpoint_variable = 'val_loss',
+    model_checkpoint_threshold = 1
+    model_checkpoint_variable = 'val_loss'
 
-    early_stopping = True
+    early_stopping = False
     early_stopping_monitor = 'val_loss'
-    early_stopping_min_delta = 0.01
+    early_stopping_min_delta = 0.1
     early_stopping_patience = 10
 
     # Hyperparameters
     GRU_units = 64
     learning_rate = 0.0002
-    epochs = 100
+    epochs = 10
 
     # Hyperparameters for optimization
     optimization_data_output_file = f'{PROJECT_ROOT_PATH}/data/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate.parquet'

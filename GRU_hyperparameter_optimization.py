@@ -5,6 +5,7 @@ import functions.GRU_functions as funcs
 import os
 #import logging
 import shelve
+import traceback
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
@@ -83,7 +84,6 @@ if __name__ == '__main__':
     # Main loop to submit jobs
     run_num = 0
     free_GPUs = [0, 1, 2, 3]
-    total_runs = len(run_parameter_sets)
 
     # Instantiate pool
     pool = mp.Pool(processes = params.num_GPUs)
@@ -123,7 +123,6 @@ if __name__ == '__main__':
                 args = (
                     gpu,
                     run_num,
-                    total_runs,
                     iteration,
                     datasets,
                     block_size,

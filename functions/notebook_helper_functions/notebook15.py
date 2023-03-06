@@ -8,8 +8,8 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
-# Note: seems to be needed to suppress warnings from modelcheckpoint callback
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+# Note: seems to be needed to suppress warnings from model checkpoint callback
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.WARN)
 
 import sys
 sys.path.append('..')
@@ -170,7 +170,7 @@ def make_training_callbacks(
     if save_model_checkpoints == True:
 
         # Include the epoch in the file name (uses `str.format`)
-        checkpoint_path = f'{model_checkpoint_dir}' + '/cp-{epoch:06d}.ckpt'
+        checkpoint_path = f'{model_checkpoint_dir}/winner.ckpt'
         # checkpoint_dir = os.path.dirname(checkpoint_path)
 
         # Create a callback that saves the winning model's weights
@@ -181,6 +181,7 @@ def make_training_callbacks(
             mode = 'min',
             save_best_only = True,
             initial_value_threshold = model_checkpoint_threshold,
+            save_freq = 'epoch',
             verbose = verbose
         )
 
@@ -358,12 +359,20 @@ def train_GRU(
     )
 
     # Setup training callbacks
+    run_string = (
+        f'GRU_units-{GRU_units}_'
+        f'learning_rate-{learning_rate}'
+    )
+
+    run_tensorboard_log_dir = f'{tensorboard_log_dir}/{run_string}'
+    run_model_checkpoint_dir = f'{model_checkpoint_dir}/{run_string}'
+    
     callbacks = make_training_callbacks(
         save_tensorboard_log = save_tensorboard_log,
-        tensorboard_log_dir = tensorboard_log_dir,
+        tensorboard_log_dir = run_tensorboard_log_dir,
         tensorboard_histogram_freq = tensorboard_histogram_freq,
         save_model_checkpoints = save_model_checkpoints,
-        model_checkpoint_dir = model_checkpoint_dir,
+        model_checkpoint_dir = run_model_checkpoint_dir,
         model_checkpoint_threshold = model_checkpoint_threshold,
         model_checkpoint_variable = model_checkpoint_variable,
         early_stopping = early_stopping,
