@@ -2,13 +2,13 @@ import config as conf
 import functions.initialization_functions as init_funcs
 import functions.GRU_functions as funcs
 
-import os
 #import logging
 import shelve
 import traceback
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
+#import tensorflow as tf
 
 if __name__ == '__main__':
 
@@ -83,21 +83,29 @@ if __name__ == '__main__':
 
     # Main loop to submit jobs
     run_num = 0
-    free_GPUs = [0, 1, 2, 3]
+
+    # Set up initial list of free GPUs
+    GPUs = [i for i in range(params.num_GPUs)]
+    
+    free_GPUs = []
+
+    for i in range(params.jobs_per_GPU):
+        free_GPUs.extend(GPUs)
 
     # Instantiate pool
-    pool = mp.Pool(processes = params.num_GPUs)
+    pool = mp.Pool(processes = (params.num_GPUs * params.jobs_per_GPU))
 
     print('')
+    print(f'{len(run_parameter_sets)} total parameter sets.')
 
     # Loop on the parameter sets
     while len(run_parameter_sets) > 0:
 
         if len(free_GPUs) > 0:
 
+            GPU = free_GPUs.pop(0)
             # When starting a new run, print the number of parameter sets remaining
-            print(f'{len(run_parameter_sets)} parameter sets remaining.', end='\r')
-            gpu = free_GPUs.pop(0)
+            print(f'{len(run_parameter_sets)} parameter sets remaining, submitting next job to GPU {GPU}')
 
             # Get and unpack parameter set
             run_parameter_set = run_parameter_sets.pop(0)
@@ -126,7 +134,7 @@ if __name__ == '__main__':
 
             result = pool.apply_async(funcs.train_GRU,
                 args = (
-                    gpu,
+                    GPU,
                     run_num,
                     iteration,
                     datasets,

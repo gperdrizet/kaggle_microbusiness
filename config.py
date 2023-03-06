@@ -107,6 +107,7 @@ class GRU_model_parameters():
 
     # Run options
     num_GPUs = 4
+    jobs_per_GPU = 10
     verbose = 0
 
     save_tensorboard_log = True
@@ -126,11 +127,11 @@ class GRU_model_parameters():
     # Hyperparameters
     GRU_units = 64
     learning_rate = 0.0002
-    epochs = 50
+    epochs = 100
 
     # Hyperparameters for optimization
     optimization_data_output_file = f'{PROJECT_ROOT_PATH}/data/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate.parquet'
     iterations = 5
     block_sizes = [9, 13, 21, 37]
     GRU_unit_nums = [16, 32, 64, 128]
-    learning_rates = [0.001, 0.0001, 0.00001]
+    learning_rates = [0.001, 0.0001, 0.00001, 0.000001]

@@ -1,4 +1,6 @@
 import os
+
+# Set some tf related environment vars
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/usr/lib/cuda/'
 
@@ -170,12 +172,8 @@ def make_training_callbacks(
     # Save model checkpoints during training
     if save_model_checkpoints == True:
 
-        logging.info('Will write checkpoint for run')
-
         # Save the new winner, over writing each time
         checkpoint_path = f'{model_checkpoint_dir}' + '/winner.ckpt'
-
-        logging.info(f'Checkpoint path: {checkpoint_path}')
 
         # Create a callback that saves the winning model's weights
         cp_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -352,9 +350,10 @@ def train_GRU(
     keras.backend.clear_session()
 
     try:
-        # Place run on GPU
+        # Place run on GPU, setting memory growth true so one job doesn't lock all VRAM
         gpus = tf.config.list_physical_devices('GPU')
         tf.config.set_visible_devices(gpus[gpu], 'GPU')
+        tf.config.experimental.set_memory_growth(gpus[gpu], True)
 
         # Get some run parameters from dataset
         output_units = forecast_horizon
@@ -402,8 +401,6 @@ def train_GRU(
             early_stopping_patience = early_stopping_patience,
             verbose = verbose
         )
-
-        logging.debug(f'Callbacks: {callbacks}')
 
         # Build the model
         model = build_GRU(
