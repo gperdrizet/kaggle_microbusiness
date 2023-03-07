@@ -6,7 +6,9 @@ os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/usr/lib/cuda/'
 
 import traceback
 import logging
+import itertools
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -18,6 +20,116 @@ import sys
 sys.path.append('..')
 
 import functions.bootstrapping_functions as bootstrap_funcs
+
+def setup_results_output(
+    optimization_data_output_file: str = None,
+    hyperparameters: dict = None,
+    iterations: int = 3
+):
+    '''Preps output dataframe and file. Reads existing data if restarting run.'''
+
+    logging.info('')
+    logging.info('####### PREPPING OUTPUT ####################################')
+
+    # Build parameter sets to loop on and submit optimization jobs
+    hyperparameter_values = []
+
+    for parameter, values in hyperparameters.items():
+        hyperparameter_values.append(values)
+
+    run_hyperparameter_sets = list(itertools.product(*hyperparameter_values))
+
+    # If results file already exists, we are restarting a run
+    if os.path.isfile(optimization_data_output_file) == True:
+
+        logging.info('')
+        logging.info('Have pre-existing run data, will load and trim hyperparameter sets...')
+
+        # Load the preexisting data
+        SMAPE_scores_df = pd.read_parquet(optimization_data_output_file)
+
+        # Now we need to trim the run hyperparameter sets to remove any
+        # that we have already completed
+        trimmed_run_hyperparameter_sets = []
+
+        # Loop on the result data, collecting hyperparameters sets that 
+        # have been completed
+        hyperparameter_sets = []
+
+        for index, row in SMAPE_scores_df.iterrows():
+            hyperparameter_set = []
+
+            # Loop on the hyperparameters we are optimizing and get the
+            # value of each from the current results row
+            for hyperparameter in hyperparameters.keys():
+                hyperparameter_set.append(row[hyperparameter])
+
+            hyperparameter_sets.append(hyperparameter_set)
+
+        # Now we need to count how many times we have run a given hyperparameter set
+        # if we have completed the requested number of iterations, it's done and we
+        # won't add it to our trimmed list of hyperparameters to run
+        completed_hyperparameter_sets = []
+
+        for hyperparameter_set in hyperparameter_sets:
+            run_count = hyperparameter_sets.count(hyperparameter_set)
+                                                                
+            if run_count == iterations:
+                completed_hyperparameter_sets.append(hyperparameter_set)
+
+        # Finally loop through the full set of run hyperparameters and
+        # only add those which have not been completed to our trimmed list
+        # of hyperparameter sets for this run
+        for hyperparameter_set in run_hyperparameter_sets:
+
+            # Convert to list before checking existence because original run
+            # hyperparameter sets contains tuples
+            if list(hyperparameter_set) not in completed_hyperparameter_sets:
+                trimmed_run_hyperparameter_sets.append(hyperparameter_set)
+
+        logging.info(f'Total hyperparameter sets: {len(run_hyperparameter_sets)}')
+        logging.info(f'Trimmed hyperparameter sets: {len(trimmed_run_hyperparameter_sets)}')
+
+        run_hyperparameter_sets = trimmed_run_hyperparameter_sets
+
+    # If results does not exist, we are starting a new run
+    elif os.path.isfile(optimization_data_output_file) == False:
+
+        logging.info('')
+        logging.info('No pre-existing run data, will load and trim hyperparameter sets...')
+
+        # Make empty dataframe to hold results
+
+        # Start column names with basic run info
+        column_names = [
+            'GPU',
+            'Run number',
+            'Iteration',
+        ]
+
+        # Then add the hyperparameters we are optimizing
+        for hyperparameter in hyperparameters.keys():
+            column_names.append(hyperparameter)
+
+        # Then add the scores we are tracking
+        column_names.extend([
+            'GRU private SMAPE score',
+            'Control private SMAPE score',
+            'GRU public SMAPE score',
+            'Control public SMAPE score'
+        ])
+
+        SMAPE_scores_df = pd.DataFrame(columns = column_names)
+
+    # Before we finish and return, add iteration numbers to the
+    # run parameter sets
+    expanded_run_hyperparameter_sets = []
+
+    for hyperparameter_set in run_hyperparameter_sets:
+        for i in range(iterations):
+            expanded_run_hyperparameter_sets.append([i] + list(hyperparameter_set))
+
+    return expanded_run_hyperparameter_sets, SMAPE_scores_df
 
 def training_validation_testing_split(
     index,

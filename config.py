@@ -107,40 +107,38 @@ class GRU_model_parameters():
 
     # Run options
     num_GPUs = 4
-    jobs_per_GPU = 12
+    jobs_per_GPU = 8
     verbose = 0
 
     save_tensorboard_log = True
-    tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization'
+    tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate'
     tensorboard_histogram_freq = 1
 
     save_model_checkpoints = True
-    model_checkpoint_dir = f'{PROJECT_ROOT_PATH}/logs/model_checkpoints/GRU_hyperparameter_optimization'
+    model_checkpoint_dir = f'{PROJECT_ROOT_PATH}/logs/model_checkpoints/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate'
     model_checkpoint_threshold = None
     model_checkpoint_variable = 'val_loss'
 
-    early_stopping = False
+    early_stopping = True
     early_stopping_monitor = 'val_loss'
     early_stopping_min_delta = 0.01
     early_stopping_patience = 5
 
-    # Hyperparameters
+    # Hyperparameters for one-off notebook runs
     GRU_units = 64
     learning_rate = 0.0002
-    epochs = 5
+    epochs = 100
 
-    # Hyperparameters for optimization
+    # Hyperparameters optimization
     optimization_data_output_file = f'{PROJECT_ROOT_PATH}/data/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate.parquet'
-    # iterations = 5
-    # block_sizes = [9, 13, 21, 37]
+
+    iterations = 8
+    # block_sizes = [9, 13, 21, 37] # model orders: 4, 8, 16, 32
     # GRU_unit_nums = [16, 32, 64, 128]
     # learning_rates = [0.001, 0.0001, 0.00001, 0.000001]
 
-    # Set-up for jobs/GPU optimization - plan is to run iteratively by hand
-    # with 1,2,4,8,16 and 32 jobs per GPU and time the runs from command 
-    # line to get an idea of how the total run time scales with number of jobs per gpu. 
-
-    iterations = 8
-    block_sizes = [9, 13]
-    GRU_unit_nums = [16, 32, 64, 128]
-    learning_rates = [0.001, 0.0001, 0.00001, 0.000001]
+    hyperparameters = {
+        'Block size': [9, 13, 21, 37], # model orders: 4, 8, 16, 32
+        'GRU units': [16, 32, 64, 128],
+        'Learning rate': [0.001, 0.0001, 0.00001, 0.000001]
+    }

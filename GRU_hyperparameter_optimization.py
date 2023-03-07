@@ -25,37 +25,10 @@ if __name__ == '__main__':
         logstart_msg = 'Starting GRU hyperparameter optimization run.'
     )
 
-    # Build parameter sets
-    run_parameter_sets = []
-
-    for block_size in params.block_sizes:
-        for GRU_units in params.GRU_unit_nums:
-            for learning_rate in params.learning_rates:
-                for iteration in range(params.iterations):
-
-                    run_parameter_sets.append([
-                        iteration,
-                        learning_rate, 
-                        GRU_units,
-                        block_size
-                    ])
-        
-    # Make empty dataframe to hold results
-
-    column_names = [
-        'GPU',
-        'Run number',
-        'Iteration',
-        'Block size',
-        'GRU units',
-        'Learning rate',
-        'GRU private SMAPE score',
-        'Control private SMAPE score',
-        'GRU public SMAPE score',
-        'Control public SMAPE score'
-    ]
-
-    error_data_df = pd.DataFrame(columns = column_names)
+    run_parameter_sets, error_data_df = funcs.setup_results_output(
+        params.optimization_data_output_file,
+        params.hyperparameters
+    )
 
     # Helper function to log results and update free gpu list
     def log_result(result):
