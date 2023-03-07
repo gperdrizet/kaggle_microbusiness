@@ -27,7 +27,8 @@ if __name__ == '__main__':
 
     run_parameter_sets, error_data_df = funcs.setup_results_output(
         params.optimization_data_output_file,
-        params.hyperparameters
+        params.hyperparameters,
+        params.iterations
     )
 
     # Helper function to log results and update free gpu list
@@ -83,38 +84,25 @@ if __name__ == '__main__':
             # Get and unpack parameter set
             run_parameter_set = run_parameter_sets.pop(0)
             iteration = run_parameter_set[0]
-            learning_rate = run_parameter_set[1]
+            block_size = run_parameter_set[1]
             GRU_units = run_parameter_set[2]
-            block_size = run_parameter_set[3]
-
-            # Load and prep data
-            input_file = f'{paths.PARSED_DATA_PATH}/{params.input_file_root_name}{params.block_size}.npy'
-            timepoints = np.load(input_file)
-
-            datasets = funcs.training_validation_testing_split(
-                index,
-                timepoints,
-                num_counties = params.num_counties,
-                input_data_type = params.input_data_type,
-                testing_timepoints = params.testing_timepoints,
-                training_split_fraction = params.training_split_fraction,
-                pad_validation_data = params.pad_validation_data,
-                forecast_horizon = params.forecast_horizon
-            )
-
-            datasets, training_mean, training_deviation = funcs.standardize_datasets(datasets)
-            datasets = funcs.make_batch_major(datasets)
+            learning_rate = run_parameter_set[3]
 
             result = pool.apply_async(funcs.train_GRU,
                 args = (
                     GPU,
                     run_num,
                     iteration,
-                    datasets,
+                    paths.PARSED_DATA_PATH,
+                    params.input_file_root_name,
+                    index,
+                    params.num_counties,
+                    params.input_data_type,
+                    params.testing_timepoints,
+                    params.training_split_fraction,
+                    params.pad_validation_data,
                     block_size,
                     params.forecast_horizon,
-                    training_mean, 
-                    training_deviation,
                     params.epochs,
                     GRU_units,
                     learning_rate,

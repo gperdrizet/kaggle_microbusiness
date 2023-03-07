@@ -435,11 +435,16 @@ def train_GRU(
     gpu,
     run_num,
     iteration,
-    datasets,
+    parsed_data_path,
+    input_file_root_name,
+    index,
+    num_counties,
+    input_data_type,
+    testing_timepoints,
+    training_split_fraction,
+    pad_validation_data,
     block_size,
     forecast_horizon,
-    training_mean, 
-    training_deviation,
     epochs,
     GRU_units,
     learning_rate,
@@ -458,10 +463,32 @@ def train_GRU(
 ):
     '''Does single training run of GRU based neural network'''
 
-    # Make sure we clear the session so we don't keep anything from the previous loop
-    keras.backend.clear_session()
+    try:
+        # Load and prep data
+        input_file = f'{parsed_data_path}/{input_file_root_name}{block_size}.npy'
+        timepoints = np.load(input_file)
+
+        datasets = training_validation_testing_split(
+            index,
+            timepoints,
+            num_counties = num_counties,
+            input_data_type = input_data_type,
+            testing_timepoints = testing_timepoints,
+            training_split_fraction = training_split_fraction,
+            pad_validation_data = pad_validation_data,
+            forecast_horizon = forecast_horizon
+        )
+
+        datasets, training_mean, training_deviation = standardize_datasets(datasets)
+        datasets = make_batch_major(datasets)
+
+    except Exception as e:
+        print(f'Caught exception from run {run_num} during data prep: {e}')
 
     try:
+        # Make sure we clear the session so we don't keep anything from the previous loop
+        keras.backend.clear_session()
+
         # Place run on GPU, setting memory growth true so one job doesn't lock all VRAM
         gpus = tf.config.list_physical_devices('GPU')
         tf.config.set_visible_devices(gpus[gpu], 'GPU')
