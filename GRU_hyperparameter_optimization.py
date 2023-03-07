@@ -67,7 +67,10 @@ if __name__ == '__main__':
         free_GPUs.extend(GPUs)
 
     # Instantiate pool
-    pool = mp.Pool(processes = (params.num_GPUs * params.jobs_per_GPU))
+    pool = mp.Pool(
+        processes = (params.num_GPUs * params.jobs_per_GPU), 
+        maxtasksperchild = params.max_tasks_per_child
+    )
 
     print('')
     print(f'{len(run_parameter_sets)} total parameter sets.')
