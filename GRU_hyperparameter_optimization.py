@@ -86,10 +86,10 @@ if __name__ == '__main__':
 
             # Get and unpack parameter set
             run_parameter_set = run_parameter_sets.pop(0)
-            iteration = run_parameter_set[0]
-            block_size = run_parameter_set[1]
-            GRU_units = run_parameter_set[2]
-            learning_rate = run_parameter_set[3]
+            block_size = run_parameter_set[0]
+            GRU_units = run_parameter_set[1]
+            learning_rate = run_parameter_set[2]
+            iteration = run_parameter_set[3]
 
             result = pool.apply_async(funcs.train_GRU,
                 args = (

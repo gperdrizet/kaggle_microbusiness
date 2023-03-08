@@ -37,6 +37,9 @@ def setup_results_output(
     for parameter, values in hyperparameters.items():
         hyperparameter_values.append(values)
 
+    # Add the iteration numbers to the end of the hyperparameter values list
+    hyperparameter_values.append(list(range(iterations)))
+
     run_hyperparameter_sets = list(itertools.product(*hyperparameter_values))
 
     # If results file already exists, we are restarting a run
@@ -45,7 +48,7 @@ def setup_results_output(
         logging.info('')
         logging.info('Have pre-existing run data, will load and trim hyperparameter sets...')
 
-        # Load the preexisting data
+        # Load the pre-existing data
         SMAPE_scores_df = pd.read_parquet(optimization_data_output_file)
 
         # Now we need to trim the run hyperparameter sets to remove any
@@ -53,8 +56,8 @@ def setup_results_output(
         trimmed_run_hyperparameter_sets = []
 
         # Loop on the result data, collecting hyperparameters sets that 
-        # have been completed
-        hyperparameter_sets = []
+        # have been run
+        completed_hyperparameter_sets = []
 
         for index, row in SMAPE_scores_df.iterrows():
             hyperparameter_set = []
@@ -64,20 +67,12 @@ def setup_results_output(
             for hyperparameter in hyperparameters.keys():
                 hyperparameter_set.append(row[hyperparameter])
 
-            hyperparameter_sets.append(hyperparameter_set)
+            # Add the iteration number
+            hyperparameter_set.append(row['Iteration'])
 
-        # Now we need to count how many times we have run a given hyperparameter set
-        # if we have completed the requested number of iterations, it's done and we
-        # won't add it to our trimmed list of hyperparameters to run
-        completed_hyperparameter_sets = []
+            completed_hyperparameter_sets.append(hyperparameter_set)
 
-        for hyperparameter_set in hyperparameter_sets:
-            run_count = hyperparameter_sets.count(hyperparameter_set)
-                                                                
-            if run_count == iterations:
-                completed_hyperparameter_sets.append(hyperparameter_set)
-
-        # Finally loop through the full set of run hyperparameters and
+        # Loop through the full list of run hyperparameter sets and
         # only add those which have not been completed to our trimmed list
         # of hyperparameter sets for this run
         for hyperparameter_set in run_hyperparameter_sets:
@@ -121,15 +116,7 @@ def setup_results_output(
 
         SMAPE_scores_df = pd.DataFrame(columns = column_names)
 
-    # Before we finish and return, add iteration numbers to the
-    # run parameter sets
-    expanded_run_hyperparameter_sets = []
-
-    for hyperparameter_set in run_hyperparameter_sets:
-        for i in range(iterations):
-            expanded_run_hyperparameter_sets.append([i] + list(hyperparameter_set))
-
-    return expanded_run_hyperparameter_sets, SMAPE_scores_df
+    return run_hyperparameter_sets, SMAPE_scores_df
 
 def training_validation_testing_split(
     index,
