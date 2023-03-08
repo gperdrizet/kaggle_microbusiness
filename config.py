@@ -107,7 +107,7 @@ class GRU_model_parameters():
 
     # Run options
     num_GPUs = 4
-    jobs_per_GPU = 2
+    jobs_per_GPU = 1
     max_tasks_per_child = 1
     verbose = 0
 
