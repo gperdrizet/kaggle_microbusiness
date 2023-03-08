@@ -30,10 +30,9 @@ if __name__ == '__main__':
     logging.info(f'Lag orders: {params.lag_orders}')
     logging.info(f'Difference degrees: {params.difference_degrees}')
     logging.info(f'Moving average orders: {params.moving_average_orders}')
-                 
 
     # Fire up the pool
-    pool, result_objects = parallel_funcs.start_multiprocessing_pool()
+    pool, result_objects = parallel_funcs.start_multiprocessing_pool(params.n_cpus)
 
     # Loop on samples, assigning each to a different worker
     for sample_num in range(params.num_samples):
@@ -42,14 +41,15 @@ if __name__ == '__main__':
             args = (
                 paths.PARSED_DATA_PATH,
                 params.input_file_root_name,
-                sample_num, 
+                sample_num,
                 params.sample_size,
                 params.block_sizes,
                 index,
                 params.data_type,
                 params.lag_orders,
                 params.difference_degrees,
-                params.moving_average_orders, 
+                params.moving_average_orders,
+                params.suppress_fit_warnings,
                 params.time_fits
             )
         )
