@@ -17,8 +17,10 @@ LOG_FORMAT = '%(name)s:%(levelname)s - %(message)s'
 
 class DataFilePaths:
 
-    # Log file dir
-    LOG_DIR = f'{PROJECT_ROOT_PATH}/logs/'
+    # Logs
+    LOG_DIR = f'{PROJECT_ROOT_PATH}/logs'
+    TENSORBOARD_LOGS = f'{LOG_DIR}/tensorboard'
+    MODEL_CHECKPOINTS = f'{LOG_DIR}/model_checkpoints'
 
     # Data related files & paths
     DATA_PATH = f'{PROJECT_ROOT_PATH}/data'
@@ -45,7 +47,6 @@ class DataFilePaths:
     BOOTSTRAPPING_RESULTS_PATH = f'{DATA_PATH}/bootstrapping_results'
 
 # Linear model bootstrapping parameters
-
 class LinearModelsBootstrappingParameters:
 
     # Run specific files
@@ -72,8 +73,8 @@ class ARIMA_model_parameters:
 
     # Experiment parameters
     data_type = 'microbusiness_density'
-    num_samples = 1800
-    sample_size = 1000
+    num_samples = 180
+    sample_size = 500
 
     block_sizes = [8,16,32]
     lag_orders = [0,1,2,3,4]
@@ -81,7 +82,7 @@ class ARIMA_model_parameters:
     moving_average_orders = [0]
 
     # Parallelization stuff
-    n_cpus = mp.cpu_count() - 2
+    n_cpus = 9 #mp.cpu_count() - 2
     samples_per_cpu = int(num_samples / n_cpus)
     time_fits = False
     suppress_fit_warnings = True
@@ -98,10 +99,47 @@ class GRU_model_parameters():
     block_size = 13
     forecast_horizon = 5
     num_counties = 'all'
-    testing_timepoints = 1
+    testing_timepoints = None
     training_split_fraction = 0.7
+    pad_validation_data = True
 
-    # Hyperparameters
+    plot_point_size = 8
+
+    # Run options
+    num_GPUs = 4
+    jobs_per_GPU = 2
+    max_tasks_per_child = 1
+    verbose = 0
+
+    save_tensorboard_log = True
+    tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate'
+    tensorboard_histogram_freq = 1
+
+    save_model_checkpoints = True
+    model_checkpoint_dir = f'{PROJECT_ROOT_PATH}/logs/model_checkpoints/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate'
+    model_checkpoint_threshold = None
+    model_checkpoint_variable = 'val_loss'
+
+    early_stopping = True
+    early_stopping_monitor = 'val_loss'
+    early_stopping_min_delta = 0.01
+    early_stopping_patience = 5
+
+    # Hyperparameters for one-off notebook runs
     GRU_units = 64
     learning_rate = 0.0002
-    epochs = 25
+    epochs = 100
+
+    # Hyperparameters optimization
+    optimization_data_output_file = f'{PROJECT_ROOT_PATH}/data/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate.parquet'
+
+    iterations = 8
+    # block_sizes = [9, 13, 21, 37] # model orders: 4, 8, 16, 32
+    # GRU_unit_nums = [16, 32, 64, 128]
+    # learning_rates = [0.001, 0.0001, 0.00001, 0.000001]
+
+    hyperparameters = {
+        'Block size': [9, 13, 21, 37], # model orders: 4, 8, 16, 32
+        'GRU units': [16, 32, 64, 128],
+        'Learning rate': [0.001, 0.0001, 0.00001, 0.000001]
+    }
