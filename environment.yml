@@ -14,3 +14,5 @@ dependencies:
   - scikit-learn
   - multiprocessing-logging
   - pyarrow
+  - cudatoolkit
+  - geopandas
