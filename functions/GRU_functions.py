@@ -28,8 +28,8 @@ def setup_results_output(
 ):
     '''Preps output dataframe and file. Reads existing data if restarting run.'''
 
-    logging.info('')
-    logging.info('####### PREPPING OUTPUT ####################################')
+    # logging.info('')
+    # logging.info('####### PREPPING OUTPUT ####################################')
 
     # Build parameter sets to loop on and submit optimization jobs
     hyperparameter_values = []
@@ -37,15 +37,18 @@ def setup_results_output(
     for parameter, values in hyperparameters.items():
         hyperparameter_values.append(values)
 
+    # Add the iteration numbers to the end of the hyperparameter values list
+    hyperparameter_values.append(list(range(iterations)))
+
     run_hyperparameter_sets = list(itertools.product(*hyperparameter_values))
 
     # If results file already exists, we are restarting a run
     if os.path.isfile(optimization_data_output_file) == True:
 
-        logging.info('')
-        logging.info('Have pre-existing run data, will load and trim hyperparameter sets...')
+        # logging.info('')
+        # logging.info('Have pre-existing run data, will load and trim hyperparameter sets...')
 
-        # Load the preexisting data
+        # Load the pre-existing data
         SMAPE_scores_df = pd.read_parquet(optimization_data_output_file)
 
         # Now we need to trim the run hyperparameter sets to remove any
@@ -53,8 +56,8 @@ def setup_results_output(
         trimmed_run_hyperparameter_sets = []
 
         # Loop on the result data, collecting hyperparameters sets that 
-        # have been completed
-        hyperparameter_sets = []
+        # have been run
+        completed_hyperparameter_sets = []
 
         for index, row in SMAPE_scores_df.iterrows():
             hyperparameter_set = []
@@ -64,20 +67,12 @@ def setup_results_output(
             for hyperparameter in hyperparameters.keys():
                 hyperparameter_set.append(row[hyperparameter])
 
-            hyperparameter_sets.append(hyperparameter_set)
+            # Add the iteration number
+            hyperparameter_set.append(row['Iteration'])
 
-        # Now we need to count how many times we have run a given hyperparameter set
-        # if we have completed the requested number of iterations, it's done and we
-        # won't add it to our trimmed list of hyperparameters to run
-        completed_hyperparameter_sets = []
+            completed_hyperparameter_sets.append(hyperparameter_set)
 
-        for hyperparameter_set in hyperparameter_sets:
-            run_count = hyperparameter_sets.count(hyperparameter_set)
-                                                                
-            if run_count == iterations:
-                completed_hyperparameter_sets.append(hyperparameter_set)
-
-        # Finally loop through the full set of run hyperparameters and
+        # Loop through the full list of run hyperparameter sets and
         # only add those which have not been completed to our trimmed list
         # of hyperparameter sets for this run
         for hyperparameter_set in run_hyperparameter_sets:
@@ -87,16 +82,16 @@ def setup_results_output(
             if list(hyperparameter_set) not in completed_hyperparameter_sets:
                 trimmed_run_hyperparameter_sets.append(hyperparameter_set)
 
-        logging.info(f'Total hyperparameter sets: {len(run_hyperparameter_sets)}')
-        logging.info(f'Trimmed hyperparameter sets: {len(trimmed_run_hyperparameter_sets)}')
+        # logging.info(f'Total hyperparameter sets: {len(run_hyperparameter_sets)}')
+        # logging.info(f'Trimmed hyperparameter sets: {len(trimmed_run_hyperparameter_sets)}')
 
         run_hyperparameter_sets = trimmed_run_hyperparameter_sets
 
     # If results does not exist, we are starting a new run
     elif os.path.isfile(optimization_data_output_file) == False:
 
-        logging.info('')
-        logging.info('No pre-existing run data, will load and trim hyperparameter sets...')
+        # logging.info('')
+        # logging.info('No pre-existing run data, will load and trim hyperparameter sets...')
 
         # Make empty dataframe to hold results
 
@@ -121,15 +116,7 @@ def setup_results_output(
 
         SMAPE_scores_df = pd.DataFrame(columns = column_names)
 
-    # Before we finish and return, add iteration numbers to the
-    # run parameter sets
-    expanded_run_hyperparameter_sets = []
-
-    for hyperparameter_set in run_hyperparameter_sets:
-        for i in range(iterations):
-            expanded_run_hyperparameter_sets.append([i] + list(hyperparameter_set))
-
-    return expanded_run_hyperparameter_sets, SMAPE_scores_df
+    return run_hyperparameter_sets, SMAPE_scores_df
 
 def training_validation_testing_split(
     index,
@@ -147,8 +134,8 @@ def training_validation_testing_split(
     Returns dataset as dict of numpy with 'training', 'validation' and 'testing' 
     as keys.'''
 
-    logging.info('')
-    logging.info('####### TRAINING, VALIDATION, TESTING SPLIT ################')
+    # logging.info('')
+    # logging.info('####### TRAINING, VALIDATION, TESTING SPLIT ################')
     
     # Empty dict for results
     datasets = {}
@@ -190,15 +177,15 @@ def training_validation_testing_split(
     datasets['training'] = training_data
     datasets['validation'] = validation_data
 
-    logging.info('')
-    logging.info(f'Input data shape: {input_data.shape}')
-    logging.info('')
-    logging.info(f'Testing timepoints: {testing_timepoints}')
-    logging.info(f'Split fraction: {training_split_fraction}')
-    logging.info(f'Split index: {split_index}')
+    # logging.info('')
+    # logging.info(f'Input data shape: {input_data.shape}')
+    # logging.info('')
+    # logging.info(f'Testing timepoints: {testing_timepoints}')
+    # logging.info(f'Split fraction: {training_split_fraction}')
+    # logging.info(f'Split index: {split_index}')
 
-    for data_type, data in datasets.items():
-        logging.info(f'{data_type} data shape: {data.shape}')
+    # for data_type, data in datasets.items():
+    #     logging.info(f'{data_type} data shape: {data.shape}')
 
     return datasets
 
@@ -206,35 +193,35 @@ def standardize_datasets(datasets):
     '''Uses mean and standard deviation from training data only to 
     convert training, validation and testing data to z-scores'''
 
-    logging.info('')
-    logging.info('####### DATA STANDARDIZATION ###############################')
+    # logging.info('')
+    # logging.info('####### DATA STANDARDIZATION ###############################')
 
     # Get mean and standard deviation from training data
     training_mean = np.mean(datasets['training'])
     training_deviation = np.std(datasets['training'])
 
-    logging.info('')
-    logging.info(f'Training data mean: {training_mean:.2f}, standard deviation: {training_deviation:.2f}')
+    # logging.info('')
+    # logging.info(f'Training data mean: {training_mean:.2f}, standard deviation: {training_deviation:.2f}')
 
     # Standardize the training, validation and test data
     logging.info('')
 
     for data_type, data in datasets.items():
         datasets[data_type] = (data - training_mean) / training_deviation
-        logging.info(f"{data_type} data, new mean: {np.mean(datasets[data_type]):.2f}, new standard deviation: {np.std(datasets[data_type]):.2f}")
+        # logging.info(f"{data_type} data, new mean: {np.mean(datasets[data_type]):.2f}, new standard deviation: {np.std(datasets[data_type]):.2f}")
 
     return datasets, training_mean, training_deviation
 
 def make_batch_major(datasets):
     '''Makes datasets batch major by swapping 0th and 2nd axis'''
 
-    logging.info('')
-    logging.info('####### SWAPPING BATCH AXIS ################################')
-    logging.info('')
+    # logging.info('')
+    # logging.info('####### SWAPPING BATCH AXIS ################################')
+    # logging.info('')
 
     for data_type, data in datasets.items():
         datasets[data_type] = np.swapaxes(data, 1, 0)
-        logging.info(f'{data_type} data new shape: {datasets[data_type].shape}')
+        # logging.info(f'{data_type} data new shape: {datasets[data_type].shape}')
 
     return datasets
 
@@ -364,14 +351,15 @@ def build_GRU(
     GRU_units: int = 64,
     learning_rate: float = 0.0002,
     input_shape: list[int] = [13,8,1],
-    output_units: int = 5
+    output_units: int = 5,
+    verbose: int = 0
 ):
     '''Builds GRU based neural network for
     microbusiness density regression'''
 
-    logging.info('')
-    logging.info('####### BUILDING MODEL #####################################')
-    logging.info('')
+    # logging.info('')
+    # logging.info('####### BUILDING MODEL #####################################')
+    # logging.info('')
 
     # Input layer
     input = layers.Input(
@@ -427,7 +415,8 @@ def build_GRU(
         metrics = [keras.metrics.MeanAbsoluteError(name = 'MAE')]
     )
 
-    model.summary(print_fn=logging.info)
+    if verbose == 1:
+        model.summary(print_fn=logging.info)
 
     return model
 
@@ -492,7 +481,7 @@ def train_GRU(
         # Place run on GPU, setting memory growth true so one job doesn't lock all VRAM
         gpus = tf.config.list_physical_devices('GPU')
         tf.config.set_visible_devices(gpus[gpu], 'GPU')
-        tf.config.experimental.set_memory_growth(gpus[gpu], True)
+        #tf.config.experimental.set_memory_growth(gpus[gpu], True)
 
         # Get some run parameters from dataset
         output_units = forecast_horizon
@@ -508,6 +497,8 @@ def train_GRU(
             f'learning_rate-{learning_rate}_'
             f'rep-{iteration}'
         )
+
+        logging.info(f'Starting run: {run_string}')
 
         run_tensorboard_log_dir = f'{tensorboard_log_dir}/{run_string}'
         run_model_checkpoint_dir = f'{model_checkpoint_dir}/{run_string}'
@@ -546,7 +537,8 @@ def train_GRU(
             GRU_units = GRU_units,
             learning_rate = learning_rate,
             input_shape = [(datasets['training'].shape[2] - forecast_horizon), datasets['training'].shape[3]],
-            output_units = output_units
+            output_units = output_units,
+            verbose = verbose
         )
 
         # Fire data generators for training and validation
