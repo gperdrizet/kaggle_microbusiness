@@ -481,7 +481,7 @@ def train_GRU(
         # Place run on GPU, setting memory growth true so one job doesn't lock all VRAM
         gpus = tf.config.list_physical_devices('GPU')
         tf.config.set_visible_devices(gpus[gpu], 'GPU')
-        #tf.config.experimental.set_memory_growth(gpus[gpu], True)
+        tf.config.experimental.set_memory_growth(gpus[gpu], True)
 
         # Get some run parameters from dataset
         output_units = forecast_horizon

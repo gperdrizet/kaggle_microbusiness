@@ -90,13 +90,13 @@ class ARIMA_model_parameters:
 class GRU_model_parameters():
 
     # Run specific files
-    log_file_name = 'GRU_hyperparameter_optimization.log'
+    log_file_name = 'GRU_block_size-GRU_units-learning_rate.log'
     input_file_root_name = 'no_detrended_data_updated_structured_bootstrap_blocksize'
-    output_file_root_name = 'GRU_hyperparameter_optimization'
+    output_file_root_name = 'GRU_block_size-GRU_units-learning_rate'
 
     # Data related stuff
     input_data_type = 'microbusiness_density'
-    block_size = 37
+    block_size = 28
     forecast_horizon = 5
     num_counties = 'all'
     testing_timepoints = None
@@ -107,16 +107,16 @@ class GRU_model_parameters():
 
     # Run options
     num_GPUs = 4
-    jobs_per_GPU = 1
+    jobs_per_GPU = 8
     max_tasks_per_child = 1 # Restart child process after every task completes
     verbose = 0
 
     save_tensorboard_log = True
-    tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization/large_block_test'
+    tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate'
     tensorboard_histogram_freq = 1
 
     save_model_checkpoints = True
-    model_checkpoint_dir = f'{PROJECT_ROOT_PATH}/logs/model_checkpoints/GRU_hyperparameter_optimization/large_block_test'
+    model_checkpoint_dir = f'{PROJECT_ROOT_PATH}/logs/model_checkpoints/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate'
     model_checkpoint_threshold = None
     model_checkpoint_variable = 'val_loss'
 
@@ -128,7 +128,7 @@ class GRU_model_parameters():
     # Hyperparameters for one-off notebook runs
     GRU_units = 64
     learning_rate = 0.0002
-    epochs = 100
+    epochs = 15
 
     # Hyperparameters optimization
     optimization_data_output_file = f'{PROJECT_ROOT_PATH}/data/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate.parquet'
@@ -148,7 +148,7 @@ class GRU_model_parameters():
     # runs is not the end of the world. Especially if it gives us more confidence in our conclusions.
 
     hyperparameters = {
-        'Block size': [9, 13, 21, 37], # for model orders: 4, 8, 16, 32
+        'Block size': [12, 29, 33], # for model orders: 7, 24, 28
         'GRU units': [16, 32, 64, 128],
         'Learning rate': [0.001, 0.0001, 0.00001, 0.000001]
     }
