@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     # Instantiate pool
     pool = mp.Pool(
-        processes = (params.num_GPUs * params.jobs_per_GPU)
+        processes = (params.num_GPUs * params.jobs_per_GPU),
         maxtasksperchild = params.max_tasks_per_child
     )
 
