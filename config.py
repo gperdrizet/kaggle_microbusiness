@@ -90,33 +90,33 @@ class ARIMA_model_parameters:
 class GRU_model_parameters():
 
     # Run specific files
-    log_file_name = 'GRU_hyperparameter_optimization.log'
+    log_file_name = 'GRU_large_block_test.log'
     input_file_root_name = 'updated_structured_bootstrap_blocksize'
-    output_file_root_name = 'GRU_hyperparameter_optimization'
+    output_file_root_name = 'GRU_large_block_test'
 
     # Data related stuff
     input_data_type = 'microbusiness_density'
-    block_size = 13
+    block_size = 37
     forecast_horizon = 5
     num_counties = 'all'
     testing_timepoints = None
     training_split_fraction = 0.7
-    pad_validation_data = True
+    pad_validation_data = False
 
     plot_point_size = 8
 
     # Run options
     num_GPUs = 4
     jobs_per_GPU = 1
-    #max_tasks_per_child = 1 # Restart child process after every task completes
+    max_tasks_per_child = 1 # Restart child process after every task completes
     verbose = 0
 
     save_tensorboard_log = True
-    tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate'
+    tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization/large_block_test'
     tensorboard_histogram_freq = 1
 
     save_model_checkpoints = True
-    model_checkpoint_dir = f'{PROJECT_ROOT_PATH}/logs/model_checkpoints/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate'
+    model_checkpoint_dir = f'{PROJECT_ROOT_PATH}/logs/model_checkpoints/GRU_hyperparameter_optimization/large_block_test'
     model_checkpoint_threshold = None
     model_checkpoint_variable = 'val_loss'
 
