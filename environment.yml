@@ -2,17 +2,17 @@ name: microbusiness
 channels:
   - defaults
 dependencies:
-  - python=3.10.0
-  - jupyterlab
-  - tensorflow-gpu
-  - kaggle
-  - pandas
-  - matplotlib
+  - python
   - numpy
-  - statsmodels
-  - seaborn
+  - pandas
+  - cudatoolkit
+  - tensorflow-gpu
   - scikit-learn
+  - statsmodels
+  - jupyterlab
+  - kaggle
+  - matplotlib
+  - seaborn
   - multiprocessing-logging
   - pyarrow
-  - cudatoolkit
   - geopandas
