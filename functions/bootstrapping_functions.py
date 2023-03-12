@@ -282,9 +282,13 @@ def make_ARIMA_forecasts(
             block_predictions['BIC'].append(model_fit.bic)
         
         except:
+
+            # Set model prediction to nan if there is an error
+            # during fit
+            model_prediction = np.nan
             
             # Collect forecast
-            block_predictions['MBD_prediction'].append(np.nan)
+            block_predictions['MBD_prediction'].append(model_prediction)
 
             # Collect 'goodness-of-fit' results
             block_predictions['fit_residuals'].append([np.nan])
