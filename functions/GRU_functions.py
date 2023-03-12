@@ -1,20 +1,135 @@
 import os
+
+# Set some tf related environment vars
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/usr/lib/cuda/'
 
+import traceback
 import logging
+import itertools
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
 # Note: seems to be needed to suppress warnings from model checkpoint callback
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.WARN)
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 import sys
 sys.path.append('..')
 
 import functions.bootstrapping_functions as bootstrap_funcs
+
+def setup_results_output(
+    optimization_data_output_file: str = None,
+    hyperparameters: dict = None,
+    iterations: int = 3
+):
+    '''Preps output dataframe and file. Reads existing data if restarting run.'''
+
+    logging.info('')
+    logging.info('####### PREPPING OUTPUT ####################################')
+
+    # Build parameter sets to loop on and submit optimization jobs
+    hyperparameter_values = []
+
+    for parameter, values in hyperparameters.items():
+        hyperparameter_values.append(values)
+
+    run_hyperparameter_sets = list(itertools.product(*hyperparameter_values))
+
+    # If results file already exists, we are restarting a run
+    if os.path.isfile(optimization_data_output_file) == True:
+
+        logging.info('')
+        logging.info('Have pre-existing run data, will load and trim hyperparameter sets...')
+
+        # Load the preexisting data
+        SMAPE_scores_df = pd.read_parquet(optimization_data_output_file)
+
+        # Now we need to trim the run hyperparameter sets to remove any
+        # that we have already completed
+        trimmed_run_hyperparameter_sets = []
+
+        # Loop on the result data, collecting hyperparameters sets that 
+        # have been completed
+        hyperparameter_sets = []
+
+        for index, row in SMAPE_scores_df.iterrows():
+            hyperparameter_set = []
+
+            # Loop on the hyperparameters we are optimizing and get the
+            # value of each from the current results row
+            for hyperparameter in hyperparameters.keys():
+                hyperparameter_set.append(row[hyperparameter])
+
+            hyperparameter_sets.append(hyperparameter_set)
+
+        # Now we need to count how many times we have run a given hyperparameter set
+        # if we have completed the requested number of iterations, it's done and we
+        # won't add it to our trimmed list of hyperparameters to run
+        completed_hyperparameter_sets = []
+
+        for hyperparameter_set in hyperparameter_sets:
+            run_count = hyperparameter_sets.count(hyperparameter_set)
+                                                                
+            if run_count == iterations:
+                completed_hyperparameter_sets.append(hyperparameter_set)
+
+        # Finally loop through the full set of run hyperparameters and
+        # only add those which have not been completed to our trimmed list
+        # of hyperparameter sets for this run
+        for hyperparameter_set in run_hyperparameter_sets:
+
+            # Convert to list before checking existence because original run
+            # hyperparameter sets contains tuples
+            if list(hyperparameter_set) not in completed_hyperparameter_sets:
+                trimmed_run_hyperparameter_sets.append(hyperparameter_set)
+
+        logging.info(f'Total hyperparameter sets: {len(run_hyperparameter_sets)}')
+        logging.info(f'Trimmed hyperparameter sets: {len(trimmed_run_hyperparameter_sets)}')
+
+        run_hyperparameter_sets = trimmed_run_hyperparameter_sets
+
+    # If results does not exist, we are starting a new run
+    elif os.path.isfile(optimization_data_output_file) == False:
+
+        logging.info('')
+        logging.info('No pre-existing run data, will load and trim hyperparameter sets...')
+
+        # Make empty dataframe to hold results
+
+        # Start column names with basic run info
+        column_names = [
+            'GPU',
+            'Run number',
+            'Iteration',
+        ]
+
+        # Then add the hyperparameters we are optimizing
+        for hyperparameter in hyperparameters.keys():
+            column_names.append(hyperparameter)
+
+        # Then add the scores we are tracking
+        column_names.extend([
+            'GRU private SMAPE score',
+            'Control private SMAPE score',
+            'GRU public SMAPE score',
+            'Control public SMAPE score'
+        ])
+
+        SMAPE_scores_df = pd.DataFrame(columns = column_names)
+
+    # Before we finish and return, add iteration numbers to the
+    # run parameter sets
+    expanded_run_hyperparameter_sets = []
+
+    for hyperparameter_set in run_hyperparameter_sets:
+        for i in range(iterations):
+            expanded_run_hyperparameter_sets.append([i] + list(hyperparameter_set))
+
+    return expanded_run_hyperparameter_sets, SMAPE_scores_df
 
 def training_validation_testing_split(
     index,
@@ -152,7 +267,7 @@ def make_training_callbacks(
     early_stopping_patience: int = 10,
     verbose: int = 0
 ):
-    
+
     # Define some callbacks to improve training.
     callbacks = []
 
@@ -169,9 +284,8 @@ def make_training_callbacks(
     # Save model checkpoints during training
     if save_model_checkpoints == True:
 
-        # Include the epoch in the file name (uses `str.format`)
-        checkpoint_path = f'{model_checkpoint_dir}/winner.ckpt'
-        # checkpoint_dir = os.path.dirname(checkpoint_path)
+        # Save the new winner, over writing each time
+        checkpoint_path = f'{model_checkpoint_dir}' + '/winner.ckpt'
 
         # Create a callback that saves the winning model's weights
         cp_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -181,8 +295,8 @@ def make_training_callbacks(
             mode = 'min',
             save_best_only = True,
             initial_value_threshold = model_checkpoint_threshold,
-            save_freq = 'epoch',
-            verbose = verbose
+            verbose = verbose,
+            save_freq = 'epoch'
         )
 
         callbacks.append(cp_callback)
@@ -318,96 +432,212 @@ def build_GRU(
     return model
 
 def train_GRU(
-    datasets,
-    forecast_horizon: int = 5,
-    epochs: int = 10,
-    GRU_units: int = 64,
-    learning_rate: float = 0.002,
-    save_tensorboard_log: bool = False,
-    tensorboard_log_dir: str = './logs/tensorboard/',
-    tensorboard_histogram_freq: int = 1,
-    save_model_checkpoints: bool = False,
-    model_checkpoint_dir: str = './logs/model_checkpoints/',
-    model_checkpoint_threshold: float = 0.1,
-    model_checkpoint_variable: str = 'val_MAE',
-    early_stopping: bool = False,
-    early_stopping_monitor: str = 'val_MAE', 
-    early_stopping_min_delta: float = 0.01, 
-    early_stopping_patience: int = 10,
-    verbose: int = 0
+    gpu,
+    run_num,
+    iteration,
+    parsed_data_path,
+    input_file_root_name,
+    index,
+    num_counties,
+    input_data_type,
+    testing_timepoints,
+    training_split_fraction,
+    pad_validation_data,
+    block_size,
+    forecast_horizon,
+    epochs,
+    GRU_units,
+    learning_rate,
+    save_tensorboard_log,
+    tensorboard_log_dir,
+    tensorboard_histogram_freq,
+    save_model_checkpoints,
+    model_checkpoint_dir,
+    model_checkpoint_threshold,
+    model_checkpoint_variable,
+    early_stopping,
+    early_stopping_monitor, 
+    early_stopping_min_delta, 
+    early_stopping_patience,
+    verbose
 ):
     '''Does single training run of GRU based neural network'''
 
-    # Get some run parameters from dataset
-    output_units = forecast_horizon
-    training_batch_size = datasets['training'].shape[1]
-    training_batches = datasets['training'].shape[0]
-    validation_batch_size = datasets['validation'].shape[1]
-    validation_batches = datasets['validation'].shape[0]
+    try:
+        # Load and prep data
+        input_file = f'{parsed_data_path}/{input_file_root_name}{block_size}.npy'
+        timepoints = np.load(input_file)
 
-    # Write some run info to log
-    log_run_info(
-        datasets,
-        forecast_horizon = forecast_horizon,
-        epochs = epochs,
-        learning_rate = learning_rate,
-        GRU_units = GRU_units,
-        training_batch_size = training_batch_size,
-        training_batches = training_batches,
-        validation_batch_size = validation_batch_size,
-        validation_batches = validation_batches
-    )
+        datasets = training_validation_testing_split(
+            index,
+            timepoints,
+            num_counties = num_counties,
+            input_data_type = input_data_type,
+            testing_timepoints = testing_timepoints,
+            training_split_fraction = training_split_fraction,
+            pad_validation_data = pad_validation_data,
+            forecast_horizon = forecast_horizon
+        )
 
-    # Setup training callbacks
-    run_string = (
-        f'GRU_units-{GRU_units}_'
-        f'learning_rate-{learning_rate}'
-    )
+        datasets, training_mean, training_deviation = standardize_datasets(datasets)
+        datasets = make_batch_major(datasets)
 
-    run_tensorboard_log_dir = f'{tensorboard_log_dir}/{run_string}'
-    run_model_checkpoint_dir = f'{model_checkpoint_dir}/{run_string}'
-    
-    callbacks = make_training_callbacks(
-        save_tensorboard_log = save_tensorboard_log,
-        tensorboard_log_dir = run_tensorboard_log_dir,
-        tensorboard_histogram_freq = tensorboard_histogram_freq,
-        save_model_checkpoints = save_model_checkpoints,
-        model_checkpoint_dir = run_model_checkpoint_dir,
-        model_checkpoint_threshold = model_checkpoint_threshold,
-        model_checkpoint_variable = model_checkpoint_variable,
-        early_stopping = early_stopping,
-        early_stopping_monitor = early_stopping_monitor, 
-        early_stopping_min_delta = early_stopping_min_delta, 
-        early_stopping_patience = early_stopping_patience,
-        verbose = verbose
-    )
+    except Exception as e:
+        print(f'Caught exception from run {run_num} during data prep: {e}')
 
-    # Build the model
-    model = build_GRU(
-        GRU_units = GRU_units,
-        learning_rate = learning_rate,
-        input_shape = [(datasets['training'].shape[2] - forecast_horizon), datasets['training'].shape[3]],
-        output_units = output_units
-    )
+    try:
+        # Make sure we clear the session so we don't keep anything from the previous loop
+        keras.backend.clear_session()
 
-    # Fire data generators for training and validation
-    training_data_generator = data_generator(datasets['training'], forecast_horizon)
-    validation_data_generator = data_generator(datasets['validation'], forecast_horizon)
+        # Place run on GPU, setting memory growth true so one job doesn't lock all VRAM
+        gpus = tf.config.list_physical_devices('GPU')
+        tf.config.set_visible_devices(gpus[gpu], 'GPU')
+        tf.config.experimental.set_memory_growth(gpus[gpu], True)
 
-    # Train the model
-    history = model.fit(
-        training_data_generator,
-        epochs = epochs,
-        batch_size = training_batch_size,
-        steps_per_epoch = training_batches,
-        validation_data = validation_data_generator,
-        validation_batch_size = validation_batch_size,
-        validation_steps = validation_batches,
-        callbacks = callbacks,
-        verbose = verbose
-    )
+        # Get some run parameters from dataset
+        output_units = forecast_horizon
+        training_batch_size = datasets['training'].shape[1]
+        training_batches = datasets['training'].shape[0]
+        validation_batch_size = datasets['validation'].shape[1]
+        validation_batches = datasets['validation'].shape[0]
 
-    return model, history
+        # Set log dirs for run
+        run_string = (
+            f'block_size-{block_size}_'
+            f'GRU_units-{GRU_units}_'
+            f'learning_rate-{learning_rate}_'
+            f'rep-{iteration}'
+        )
+
+        run_tensorboard_log_dir = f'{tensorboard_log_dir}/{run_string}'
+        run_model_checkpoint_dir = f'{model_checkpoint_dir}/{run_string}'
+
+        # # Write some run info to log
+        # log_run_info(
+        #     datasets,
+        #     forecast_horizon = forecast_horizon,
+        #     epochs = epochs,
+        #     learning_rate = learning_rate,
+        #     GRU_units = GRU_units,
+        #     training_batch_size = training_batch_size,
+        #     training_batches = training_batches,
+        #     validation_batch_size = validation_batch_size,
+        #     validation_batches = validation_batches
+        # )
+
+        # Setup training callbacks
+        callbacks = make_training_callbacks(
+            save_tensorboard_log = save_tensorboard_log,
+            tensorboard_log_dir = run_tensorboard_log_dir,
+            tensorboard_histogram_freq = tensorboard_histogram_freq,
+            save_model_checkpoints = save_model_checkpoints,
+            model_checkpoint_dir = run_model_checkpoint_dir,
+            model_checkpoint_threshold = model_checkpoint_threshold,
+            model_checkpoint_variable = model_checkpoint_variable,
+            early_stopping = early_stopping,
+            early_stopping_monitor = early_stopping_monitor, 
+            early_stopping_min_delta = early_stopping_min_delta, 
+            early_stopping_patience = early_stopping_patience,
+            verbose = verbose
+        )
+
+        # Build the model
+        model = build_GRU(
+            GRU_units = GRU_units,
+            learning_rate = learning_rate,
+            input_shape = [(datasets['training'].shape[2] - forecast_horizon), datasets['training'].shape[3]],
+            output_units = output_units
+        )
+
+        # Fire data generators for training and validation
+        training_data_generator = data_generator(datasets['training'], forecast_horizon)
+        validation_data_generator = data_generator(datasets['validation'], forecast_horizon)
+
+        # Train the model
+        history = model.fit(
+            training_data_generator,
+            epochs = epochs,
+            batch_size = training_batch_size,
+            steps_per_epoch = training_batches,
+            validation_data = validation_data_generator,
+            validation_batch_size = validation_batch_size,
+            validation_steps = validation_batches,
+            callbacks = callbacks,
+            verbose = verbose
+        )
+
+    except Exception as e:
+        print(f'Caught exception from GPU {gpu} during training')
+        
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        traceback.print_exc()
+
+        print()
+        raise e
+
+    # Evaluate the model using the winning checkpoint from the run:
+    # First load checkpoint weights into the model
+    try:
+        checkpoint = f'{run_model_checkpoint_dir}/winner.ckpt'
+        model.load_weights(checkpoint)
+
+        predictions, targets = make_predictions(
+            model, 
+            datasets, 
+            forecast_horizon, 
+            training_mean, 
+            training_deviation
+        )
+
+        GRU_private_SMAPE_score = aggregate_SMAPE_score(
+            targets['validation'],
+            predictions['GRU_validation'],
+            [2,3,4]
+        )
+
+        control_private_SMAPE_score = aggregate_SMAPE_score(
+            targets['validation'],
+            predictions['control_validation'],
+            [2,3,4]
+        )
+
+        GRU_public_SMAPE_score = aggregate_SMAPE_score(
+            targets['validation'],
+            predictions['GRU_validation'],
+            [0]
+        )
+
+        control_public_SMAPE_score = aggregate_SMAPE_score(
+            targets['validation'],
+            predictions['control_validation'],
+            [0]
+        )
+
+        run_result = [
+            gpu,
+            run_num,
+            iteration,
+            block_size,
+            GRU_units,
+            learning_rate,
+            GRU_private_SMAPE_score,
+            control_private_SMAPE_score,
+            GRU_public_SMAPE_score,
+            control_public_SMAPE_score
+        ]
+
+    except Exception as e:
+        print(f'Caught exception from GPU {gpu} during model evaluation')
+        
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        traceback.print_exc()
+
+        print()
+        raise e
+
+    return run_result
 
 def make_predictions(model, datasets, forecast_horizon, training_mean, training_deviation):
     '''Uses a trained model to make predictions for training, 
