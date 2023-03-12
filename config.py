@@ -90,9 +90,9 @@ class ARIMA_model_parameters:
 class GRU_model_parameters():
 
     # Run specific files
-    log_file_name = 'GRU_large_block_test.log'
-    input_file_root_name = 'updated_structured_bootstrap_blocksize'
-    output_file_root_name = 'GRU_large_block_test'
+    log_file_name = 'GRU_hyperparameter_optimization.log'
+    input_file_root_name = 'no_detrended_data_updated_structured_bootstrap_blocksize'
+    output_file_root_name = 'GRU_hyperparameter_optimization'
 
     # Data related stuff
     input_data_type = 'microbusiness_density'
@@ -101,7 +101,7 @@ class GRU_model_parameters():
     num_counties = 'all'
     testing_timepoints = None
     training_split_fraction = 0.7
-    pad_validation_data = False
+    pad_validation_data = True
 
     plot_point_size = 8
 
@@ -133,13 +133,22 @@ class GRU_model_parameters():
     # Hyperparameters optimization
     optimization_data_output_file = f'{PROJECT_ROOT_PATH}/data/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate.parquet'
 
-    iterations = 8
-    # block_sizes = [9, 13, 21, 37] # model orders: 4, 8, 16, 32
-    # GRU_unit_nums = [16, 32, 64, 128]
-    # learning_rates = [0.001, 0.0001, 0.00001, 0.000001]
+    iterations = 3
+
+    # Second iteration of first round hyperparameter optimization. Had to makes some decisions here.
+    # Large block sizes were failing to train in the first attempt because of the padding we were
+    # inserting between the training and validation sets - I think it's important to keep this padding
+    # so that our validation set is a 'untouched' as possible - i.e. it's targets have never been
+    # used in training. This puts constraints on block size. We were able to gain back two timepoints
+    # by removing the 1st and 2nd order detrended data. That might be worth a revisit if we have time.
+    # For now, I want the most realistic picture of how well these models will do on the private
+    # leaderboard and I want to know how the block size influences that performance. I think we already know
+    # the answer - bigger block size is better. If that is the conclusion, our final submission will be 
+    # trained on all of the data anyway, so losing some data to padding the validation set in experimental
+    # runs is not the end of the world. Especially if it gives us more confidence in our conclusions.
 
     hyperparameters = {
-        'Block size': [9, 13, 21, 37], # model orders: 4, 8, 16, 32
+        'Block size': [9, 13, 21, 37], # for model orders: 4, 8, 16, 32
         'GRU units': [16, 32, 64, 128],
         'Learning rate': [0.001, 0.0001, 0.00001, 0.000001]
     }
