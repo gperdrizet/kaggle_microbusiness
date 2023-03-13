@@ -73,16 +73,16 @@ class ARIMA_model_parameters:
 
     # Experiment parameters
     data_type = 'microbusiness_density'
-    num_samples = 180
-    sample_size = 500
+    num_samples = 160
+    sample_size = 100
 
-    block_sizes = [8,16,32]
+    block_sizes = [10,20,40]
     lag_orders = [0,1,2,3,4]
     difference_degrees = [0,1,2,3]
     moving_average_orders = [0]
 
     # Parallelization stuff
-    n_cpus = 9 #mp.cpu_count() - 2
+    n_cpus = mp.cpu_count() - 4
     samples_per_cpu = int(num_samples / n_cpus)
     time_fits = False
     suppress_fit_warnings = True
@@ -91,7 +91,7 @@ class GRU_model_parameters():
 
     # Run specific files
     log_file_name = 'GRU_block_size-GRU_units-learning_rate.log'
-    input_file_root_name = 'no_detrended_data_updated_structured_bootstrap_blocksize'
+    input_file_root_name = 'updated_structured_bootstrap_blocksize'
     output_file_root_name = 'GRU_block_size-GRU_units-learning_rate'
 
     # Data related stuff
@@ -128,7 +128,7 @@ class GRU_model_parameters():
     # Hyperparameters for one-off notebook runs
     GRU_units = 64
     learning_rate = 0.0002
-    epochs = 15
+    epochs = 200
 
     # Hyperparameters optimization
     optimization_data_output_file = f'{PROJECT_ROOT_PATH}/data/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate.parquet'
@@ -139,13 +139,12 @@ class GRU_model_parameters():
     # Large block sizes were failing to train in the first attempt because of the padding we were
     # inserting between the training and validation sets - I think it's important to keep this padding
     # so that our validation set is a 'untouched' as possible - i.e. it's targets have never been
-    # used in training. This puts constraints on block size. We were able to gain back two timepoints
-    # by removing the 1st and 2nd order detrended data. That might be worth a revisit if we have time.
-    # For now, I want the most realistic picture of how well these models will do on the private
-    # leaderboard and I want to know how the block size influences that performance. I think we already know
-    # the answer - bigger block size is better. If that is the conclusion, our final submission will be 
-    # trained on all of the data anyway, so losing some data to padding the validation set in experimental
-    # runs is not the end of the world. Especially if it gives us more confidence in our conclusions.
+    # used in training. This puts constraints on block size. I want the most realistic picture of how 
+    # well these models will do on the private leaderboard and I want to know how the block size 
+    # influences that performance. I think we already know the answer - bigger block size is better. 
+    # If that is the conclusion, our final submission will be trained on all of the data anyway, 
+    # so losing some data to padding the validation set in experimental runs is not the end of the 
+    # world. Especially if it gives us more confidence in our conclusions.
 
     hyperparameters = {
         'Block size': [12, 29, 33], # for model orders: 7, 24, 28

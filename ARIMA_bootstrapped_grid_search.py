@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     # Fire up logger
     logger = init_funcs.start_logger(
-        logfile = f'{paths.LOG_DIR}/{params.log_file_root_name}-block_size.log',
+        logfile = f'{paths.LOG_DIR}/{params.log_file_root_name}-block_size-lag_order-difference_degree.log',
         logstart_msg = 'Starting bootstrapped ARIMA optimization run'
     )
 
@@ -69,5 +69,5 @@ if __name__ == '__main__':
     print(data_df.info())
 
     # Persist to disk as HDF5
-    output_file = f'{paths.BOOTSTRAPPING_RESULTS_PATH}/{params.output_file_root_name}-block_size.parquet'
+    output_file = f'{paths.BOOTSTRAPPING_RESULTS_PATH}/{params.output_file_root_name}-block_size-lag_order-difference_degree.parquet'
     data_df.to_parquet(output_file)
