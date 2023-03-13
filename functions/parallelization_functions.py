@@ -95,7 +95,9 @@ def parallel_ARIMA_gridsearch(
         'MBD_actual': [],
         'fit_residuals': [],
         'AIC': [],
-        'BIC': []
+        'BIC': [],
+        'public_SMAPE': [],
+        'private_SMAPE': []
     }
 
     # Loop on model parameters
@@ -184,7 +186,9 @@ def cleanup_ARIMA_bootstrapping_multiprocessing_pool(pool, result_objects):
         'MBD_actual': [],
         'fit_residuals': [],
         'AIC': [],
-        'BIC': []
+        'BIC': [],
+        'public_SMAPE': [],
+        'private_SMAPE': []
     }
 
     for result in results:

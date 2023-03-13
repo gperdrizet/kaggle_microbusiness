@@ -12,7 +12,7 @@ PROJECT_NAME = 'godaddy-microbusiness-density-forecasting'
 PROJECT_ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Logging stuff
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = '%(name)s:%(levelname)s - %(message)s'
 
 class DataFilePaths:
@@ -32,7 +32,7 @@ class DataFilePaths:
 
     # Parsed/formatted data for benchmarking, training and cross validation
     PARSED_DATA_PATH = f'{DATA_PATH}/parsed_data'
-    PARSED_DATA_COLUMN_INDEX = f'{PARSED_DATA_PATH}/no_detrended_detrended_data_updated_structured_bootstrap_column_index'
+    PARSED_DATA_COLUMN_INDEX = f'{PARSED_DATA_PATH}/no_detrended_data_updated_structured_bootstrap_column_index'
 
     # Contest submission files
     SUBMISSIONS_PATH = f'{DATA_PATH}/submissions'

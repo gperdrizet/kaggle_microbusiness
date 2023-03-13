@@ -231,16 +231,16 @@ def make_ARIMA_forecasts(
         'BIC': []
     }
 
-    # Get input data from block, up to one datapoint before
+    # Get input data from block, up to five datapoints before
     # the end of the timeseries (this will be the forecast)
-    y_input = list(block[:-1, index[data_type]])
+    y_input = list(block[:-5, index[data_type]])
 
-    # Make the 'control' prediction - i.e. the second to last
-    # value from the block
-    control_prediction = block[-2, index[data_type]]
+    # Make the 'control' prediction - i.e. the last
+    # value from the input portion of the block and expand it to
+    # length 5
+    control_prediction = [block[-6, index[data_type]]] * 5
 
-    # Get prediction for naive control. Note: these are indexes
-    # so model_order gets the model_order th element (zero anchored)
+
     block_predictions['model_type'].append('control')
     block_predictions['lag_order'].append(lag_order)
     block_predictions['difference_degree'].append(difference_degree)
@@ -249,7 +249,7 @@ def make_ARIMA_forecasts(
     block_predictions['MBD_prediction'].append(control_prediction)
 
     # Add placeholder values for 'goodness-of-fit' columns for control
-    block_predictions['fit_residuals'].append([0])
+    block_predictions['fit_residuals'].append([0] * 5)
     block_predictions['AIC'].append(0)
     block_predictions['BIC'].append(0)
 
@@ -271,7 +271,7 @@ def make_ARIMA_forecasts(
         try:
             model = ARIMA(y_input, order=(lag_order,difference_degree,moving_average_order))
             model_fit = model.fit()
-            model_prediction = model_fit.forecast(steps = 1)[0]
+            model_prediction = model_fit.forecast(steps = 5)
 
             # Collect forecast
             block_predictions['MBD_prediction'].append(model_prediction)
@@ -402,7 +402,9 @@ def smape_score_ARIMA_models(
         'MBD_actual': [],
         'fit_residuals': [],
         'AIC': [],
-        'BIC': []
+        'BIC': [],
+        'public_SMAPE': [],
+        'private_SMAPE': []
     }
 
     for block_num in range(sample.shape[0]):
@@ -423,15 +425,34 @@ def smape_score_ARIMA_models(
         for key, value in block_predictions.items():
             block_data[key].extend(value)
 
-        # Get the true value and add to data
-        actual_value = sample[block_num, -1, index['microbusiness_density']]
+        # Get the targets and add to data
+        targets = list(sample[block_num, 5:, index['microbusiness_density']])
+        logging.debug(f'Sample shape: {sample.shape}')
+        logging.debug(f'Block shape: {sample[block_num].shape}')
+        logging.debug(f'Target shape: {sample[block_num, 5:, index["microbusiness_density"]].shape}')
 
         # Get and collect SMAPE value for models
-        for value in block_predictions['MBD_prediction']:
+        for forecast in block_predictions['MBD_prediction']:
+            logging.debug(f'Targets: {targets}')
+            logging.debug(f'Forecast: {forecast}')
 
-            smape_value = two_point_smape(actual_value, value)
-            block_data['SMAPE_value'].append(smape_value)
-            block_data['MBD_actual'].append(actual_value)
+            smape_values = []
+            MBD_values = []
+
+            for target, value in zip(targets, forecast):
+                smape_values.append(two_point_smape(target, value))
+                MBD_values.append(target)
+
+            # Add to results
+            block_data['SMAPE_value'].append(smape_values)
+            block_data['MBD_actual'].append(target)
+
+            # Get public (+1) and private (+3, +5) leaderboard SMAPE scores
+            public_smape = smape_values[0] / 100
+            private_smape = (3/100) * sum(smape_values[2:])
+
+            block_data['public_SMAPE'].append(public_smape)
+            block_data['private_SMAPE'].append(private_smape)
 
     return block_data
 
@@ -497,7 +518,7 @@ def bootstrap_ARIMA_smape_scores(
         time_fits
     ):
     '''Takes bootstrapping experiment run parameters, generates random sample of 
-    blocks from timepoints and runs forecast/score for models+control returns
+    blocks from timepoints and runs forecast/score for models+control, returns
     dict of results'''
 
     # logging.debug('')
@@ -516,7 +537,9 @@ def bootstrap_ARIMA_smape_scores(
         'MBD_actual': [],
         'fit_residuals': [],
         'AIC': [],
-        'BIC': []
+        'BIC': [],
+        'public_SMAPE': [],
+        'private_SMAPE': []
     }
 
     # Generate sample of random blocks from random timepoint
