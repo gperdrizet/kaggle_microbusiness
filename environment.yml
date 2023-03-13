@@ -4,15 +4,15 @@ channels:
 dependencies:
   - python
   - numpy
-  - pandas
-  - cudatoolkit
-  - tensorflow-gpu
-  - scikit-learn
-  - statsmodels
-  - jupyterlab
-  - kaggle
-  - matplotlib
-  - seaborn
-  - multiprocessing-logging
-  - pyarrow
-  - geopandas
+  - anaconda::pandas
+  - conda-forge::cudatoolkit
+  - conda-forge::tensorflow-gpu
+  - anaconda::scikit-learn
+  - anaconda::statsmodels
+  - conda-forge::jupyterlab
+  - conda-forge::kaggle
+  - conda-forge::matplotlib
+  - anaconda::seaborn
+  - conda-forge::multiprocessing-logging
+  - conda-forge::pyarrow
+  - conda-forge::geopandas
