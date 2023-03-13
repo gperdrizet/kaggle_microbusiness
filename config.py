@@ -32,7 +32,7 @@ class DataFilePaths:
 
     # Parsed/formatted data for benchmarking, training and cross validation
     PARSED_DATA_PATH = f'{DATA_PATH}/parsed_data'
-    PARSED_DATA_COLUMN_INDEX = f'{PARSED_DATA_PATH}/column_index'
+    PARSED_DATA_COLUMN_INDEX = f'{PARSED_DATA_PATH}/no_detrended_detrended_data_updated_structured_bootstrap_column_index'
 
     # Contest submission files
     SUBMISSIONS_PATH = f'{DATA_PATH}/submissions'
@@ -90,13 +90,13 @@ class ARIMA_model_parameters:
 class GRU_model_parameters():
 
     # Run specific files
-    log_file_name = 'GRU_block_size-GRU_units-learning_rate.log'
+    log_file_name = 'GRU_detrended_data_test.log'
     input_file_root_name = 'updated_structured_bootstrap_blocksize'
-    output_file_root_name = 'GRU_block_size-GRU_units-learning_rate'
+    output_file_root_name = 'GRU_detrended_data_test'
 
     # Data related stuff
-    input_data_type = 'microbusiness_density'
-    block_size = 28
+    input_data_type = 'microbusiness_density_change'
+    block_size = 21
     forecast_horizon = 5
     num_counties = 'all'
     testing_timepoints = None
@@ -112,11 +112,11 @@ class GRU_model_parameters():
     verbose = 0
 
     save_tensorboard_log = True
-    tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate'
+    tensorboard_log_dir = f'{PROJECT_ROOT_PATH}/logs/tensorboard/GRU_hyperparameter_optimization/detrended_data_test'
     tensorboard_histogram_freq = 1
 
     save_model_checkpoints = True
-    model_checkpoint_dir = f'{PROJECT_ROOT_PATH}/logs/model_checkpoints/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate'
+    model_checkpoint_dir = f'{PROJECT_ROOT_PATH}/logs/model_checkpoints/GRU_hyperparameter_optimization/detrended_data_test'
     model_checkpoint_threshold = None
     model_checkpoint_variable = 'val_loss'
 
@@ -128,10 +128,10 @@ class GRU_model_parameters():
     # Hyperparameters for one-off notebook runs
     GRU_units = 64
     learning_rate = 0.0002
-    epochs = 200
+    epochs = 10
 
     # Hyperparameters optimization
-    optimization_data_output_file = f'{PROJECT_ROOT_PATH}/data/GRU_hyperparameter_optimization/block_size-GRU_units-learning_rate.parquet'
+    optimization_data_output_file = f'{PROJECT_ROOT_PATH}/data/GRU_hyperparameter_optimization/detrended_data_test.parquet'
 
     iterations = 3
 
