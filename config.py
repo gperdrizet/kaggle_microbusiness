@@ -32,7 +32,7 @@ class DataFilePaths:
 
     # Parsed/formatted data for benchmarking, training and cross validation
     PARSED_DATA_PATH = f'{DATA_PATH}/parsed_data'
-    PARSED_DATA_COLUMN_INDEX = f'{PARSED_DATA_PATH}/no_detrended_data_updated_structured_bootstrap_column_index'
+    PARSED_DATA_COLUMN_INDEX = f'{PARSED_DATA_PATH}/updated_structured_bootstrap_column_index'
 
     # Contest submission files
     SUBMISSIONS_PATH = f'{DATA_PATH}/submissions'
@@ -77,9 +77,9 @@ class ARIMA_model_parameters:
     sample_size = 100
 
     block_sizes = [10,20,40]
-    lag_orders = [0,1,2,3,4]
-    difference_degrees = [0,1,2,3]
-    moving_average_orders = [0]
+    lag_orders = [0]
+    difference_degrees = [1]
+    moving_average_orders = [0,1,2,3,4,5]
 
     # Parallelization stuff
     n_cpus = mp.cpu_count() - 4
@@ -120,7 +120,7 @@ class GRU_model_parameters():
     model_checkpoint_threshold = None
     model_checkpoint_variable = 'val_loss'
 
-    early_stopping = True
+    early_stopping = False
     early_stopping_monitor = 'val_loss'
     early_stopping_min_delta = 0.01
     early_stopping_patience = 5

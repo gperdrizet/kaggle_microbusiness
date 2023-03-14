@@ -285,13 +285,13 @@ def make_ARIMA_forecasts(
 
             # Set model prediction to nan if there is an error
             # during fit
-            model_prediction = np.nan
+            model_prediction = [np.nan] * 5
             
             # Collect forecast
             block_predictions['MBD_prediction'].append(model_prediction)
 
             # Collect 'goodness-of-fit' results
-            block_predictions['fit_residuals'].append([np.nan])
+            block_predictions['fit_residuals'].append([np.nan]*5)
             block_predictions['AIC'].append(np.nan)
             block_predictions['BIC'].append(np.nan)
 
@@ -426,7 +426,7 @@ def smape_score_ARIMA_models(
             block_data[key].extend(value)
 
         # Get the targets and add to data
-        targets = list(sample[block_num, 5:, index['microbusiness_density']])
+        targets = list(sample[block_num, -5:, index['microbusiness_density']])
         logging.debug(f'Sample shape: {sample.shape}')
         logging.debug(f'Block shape: {sample[block_num].shape}')
         logging.debug(f'Target shape: {sample[block_num, 5:, index["microbusiness_density"]].shape}')
@@ -448,8 +448,8 @@ def smape_score_ARIMA_models(
             block_data['MBD_actual'].append(target)
 
             # Get public (+1) and private (+3, +5) leaderboard SMAPE scores
-            public_smape = smape_values[0] / 100
-            private_smape = (3/100) * sum(smape_values[2:])
+            public_smape = smape_values[0] * 100
+            private_smape = (100/3) * sum(smape_values[2:])
 
             block_data['public_SMAPE'].append(public_smape)
             block_data['private_SMAPE'].append(private_smape)

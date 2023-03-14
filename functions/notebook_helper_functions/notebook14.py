@@ -305,14 +305,15 @@ def parse_results(
         'lag_order',
         'difference_degree',
         'moving_average_order'
-    ])[['SMAPE_value']].mean().mul(100)
+    ])[['public_SMAPE', 'private_SMAPE']].mean()
 
     # Rename columns to reflect the change from SMAPE values for a single prediction to
     # SMAPE scores within a sample
-    sample_smape_scores_df.rename(inplace=True, columns={'SMAPE_value': 'SMAPE_score'})
+    #sample_smape_scores_df.rename(inplace=True, columns={'SMAPE_value': 'SMAPE_score'})
 
     # Add log SMAPE score column for plotting
-    sample_smape_scores_df['log_SMAPE_score'] = np.log(sample_smape_scores_df['SMAPE_score'].astype(float))
+    sample_smape_scores_df['log_public_SMAPE'] = np.log(sample_smape_scores_df['public_SMAPE'].astype(float))
+    sample_smape_scores_df['log_private_SMAPE'] = np.log(sample_smape_scores_df['private_SMAPE'].astype(float))
 
     # Clean up index and inspect. Now each sample in all of the conditions is represented by a single row
     # with two SMAPE scores calculated from all of the datapoints in that condition and sample. One from
@@ -325,23 +326,24 @@ def parse_results(
 
 def sample_mean_smape_boxplot(
     sample_smape_scores_df: pd.DataFrame,
+    score_type: str = 'public_SMAPE',
     parameter: str = 'block_size',
     hue_by: str = 'difference_degree'
 ):
 
     # Get the best control mean of sample SMAPE scores from this experiment so that we can add
     # it to the plots for comparison
-    mean_smape_score_df = sample_smape_scores_df.groupby(['model_type', 'lag_order', 'difference_degree', 'moving_average_order'])[['SMAPE_score']].mean()
+    mean_smape_score_df = sample_smape_scores_df.groupby(['model_type', 'lag_order', 'difference_degree', 'moving_average_order'])[[score_type]].mean()
     mean_smape_score_df.reset_index(inplace=True, drop=False)
 
-    winning_control_mean_smape = mean_smape_score_df[mean_smape_score_df['model_type'] == 'control'].sort_values(by=['SMAPE_score'])
+    winning_control_mean_smape = mean_smape_score_df[mean_smape_score_df['model_type'] == 'control'].sort_values(by=[score_type])
     winning_control_mean_smape.reset_index(inplace=True, drop=True)
-    winning_control_mean_smape = winning_control_mean_smape['SMAPE_score'].iloc[0]
+    winning_control_mean_smape = winning_control_mean_smape[score_type].iloc[0]
 
     # Also get the best single sample SMAPE score
-    winning_control_smape = sample_smape_scores_df[sample_smape_scores_df['model_type'] == 'control'].sort_values(by=['SMAPE_score'])
+    winning_control_smape = sample_smape_scores_df[sample_smape_scores_df['model_type'] == 'control'].sort_values(by=[score_type])
     winning_control_smape.reset_index(inplace=True, drop=True)
-    winning_control_smape = winning_control_smape['SMAPE_score'].iloc[0]
+    winning_control_smape = winning_control_smape[score_type].iloc[0]
 
     print()
     print(f'Winning control mean of sample SMAPE scores: {winning_control_mean_smape}')
@@ -363,13 +365,13 @@ def sample_mean_smape_boxplot(
 
     # Find the experiment-wide max and min SMAPE score so that we can set a common Y-scale for all
     # of the subplots
-    max_smape_score = sample_smape_scores_df[sample_smape_scores_df['model_type'] == 'ARIMA'].sort_values(by=['SMAPE_score'], ascending=False)
+    max_smape_score = sample_smape_scores_df[sample_smape_scores_df['model_type'] == 'ARIMA'].sort_values(by=[score_type], ascending=False)
     max_smape_score.reset_index(inplace=True, drop=True)
-    max_smape_score = max_smape_score['SMAPE_score'].iloc[0]
+    max_smape_score = max_smape_score[score_type].iloc[0]
 
-    min_smape_score = sample_smape_scores_df[sample_smape_scores_df['model_type'] == 'ARIMA'].sort_values(by=['SMAPE_score'], ascending=True)
+    min_smape_score = sample_smape_scores_df[sample_smape_scores_df['model_type'] == 'ARIMA'].sort_values(by=[score_type], ascending=True)
     min_smape_score.reset_index(inplace=True, drop=True)
-    min_smape_score = min_smape_score['SMAPE_score'].iloc[0]
+    min_smape_score = min_smape_score[score_type].iloc[0]
 
     # Plot
     fig, ax = plt.subplots(len(parameters[parameter]), 1, figsize=(12, (3.5 * len(parameters[parameter]))))
@@ -379,7 +381,7 @@ def sample_mean_smape_boxplot(
         sns.boxplot(
             data=sample_smape_scores_df[(sample_smape_scores_df['model_type'] == 'ARIMA') & (sample_smape_scores_df[parameter] == parameter_level)], 
             x='lag_order',
-            y='SMAPE_score',
+            y=score_type,
             hue=hue_by,
             ax=ax[plot_num]
         )
@@ -402,6 +404,8 @@ def sample_mean_smape_boxplot(
 
         # Put a legend to the right of the current axis
         ax[plot_num].legend(title=hue_by, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+
+    plt.suptitle(f'{score_type}')
 
     plt.tight_layout()
     
