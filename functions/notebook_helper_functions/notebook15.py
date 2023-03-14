@@ -247,6 +247,7 @@ def log_run_info(
     return True
 
 def build_GRU(
+    deep_GRU: bool = False,
     GRU_units: int = 64,
     learning_rate: float = 0.0002,
     input_shape: list[int] = [13,8,1],
@@ -265,40 +266,80 @@ def build_GRU(
         shape = input_shape
     )
 
-    # GRU layer
-    gru = layers.GRU(
-        GRU_units,
-        activation='tanh',
-        recurrent_activation='sigmoid',
-        use_bias=True,
-        kernel_initializer='glorot_uniform',
-        recurrent_initializer='orthogonal',
-        bias_initializer='zeros',
-        kernel_regularizer=None,
-        recurrent_regularizer=None,
-        bias_regularizer=None,
-        activity_regularizer=None,
-        kernel_constraint=None,
-        recurrent_constraint=None,
-        bias_constraint=None,
-        dropout=0.0,
-        recurrent_dropout=0.0,
-        return_sequences=False,
-        return_state=False,
-        go_backwards=False,
-        stateful=False,
-        unroll=False,
-        time_major=False,
-        reset_after=True,
-        name='GRU'
-    )(input)
+    if deep_GRU == False:
+
+        # Single GRU layer
+        to_output = layers.GRU(
+            GRU_units,
+            activation='tanh',
+            recurrent_activation='sigmoid',
+            use_bias=True,
+            kernel_initializer='glorot_uniform',
+            recurrent_initializer='orthogonal',
+            bias_initializer='zeros',
+            kernel_regularizer=None,
+            recurrent_regularizer=None,
+            bias_regularizer=None,
+            activity_regularizer=None,
+            kernel_constraint=None,
+            recurrent_constraint=None,
+            bias_constraint=None,
+            dropout=0.0,
+            recurrent_dropout=0.0,
+            return_sequences=False,
+            return_state=False,
+            go_backwards=False,
+            stateful=False,
+            unroll=False,
+            time_major=False,
+            reset_after=True,
+            name='GRU'
+        )(input)
+
+    elif deep_GRU == True:
+
+        gru1 = layers.GRU(
+            GRU_units,
+            return_sequences=True,
+            name='GRU1'
+        )(input)
+
+        gru2 = layers.GRU(
+            GRU_units,
+            return_sequences=True,
+            name='GRU1'
+        )(gru1)
+
+        gru3 = layers.GRU(
+            GRU_units,
+            return_sequences=True,
+            name='GRU1'
+        )(gru2)
+
+        dense1 = layers.Dense(
+            units = GRU_units,
+            activation = 'relu',
+            name = 'Dense1'
+        )(gru3)
+
+        dense2 = layers.Dense(
+            units = GRU_units,
+            activation = 'relu',
+            name = 'Dense2'
+        )(dense1)
+
+        to_output = layers.Dense(
+            units = GRU_units,
+            activation = 'relu',
+            name = 'Dense3'
+        )(dense2)
 
     # output layer
     output = layers.Dense(
         name = 'Output',
         units = output_units,
         activation = 'linear'
-    )(gru)
+    )(to_output)
 
     # Next, we will build the complete model and compile it.
     model = keras.models.Model(
