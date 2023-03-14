@@ -32,7 +32,7 @@ class DataFilePaths:
 
     # Parsed/formatted data for benchmarking, training and cross validation
     PARSED_DATA_PATH = f'{DATA_PATH}/parsed_data'
-    PARSED_DATA_COLUMN_INDEX = f'{PARSED_DATA_PATH}/updated_structured_bootstrap_column_index'
+    PARSED_DATA_COLUMN_INDEX = f'{PARSED_DATA_PATH}/no_detrended_data_updated_structured_bootstrap_column_index'
 
     # Contest submission files
     SUBMISSIONS_PATH = f'{DATA_PATH}/submissions'
@@ -74,12 +74,12 @@ class ARIMA_model_parameters:
     # Experiment parameters
     data_type = 'microbusiness_density'
     num_samples = 160
-    sample_size = 100
+    sample_size = 3000
 
-    block_sizes = [10,20,40]
+    block_sizes = [20]
     lag_orders = [0]
     difference_degrees = [1]
-    moving_average_orders = [0,1,2,3,4,5]
+    moving_average_orders = [0]
 
     # Parallelization stuff
     n_cpus = mp.cpu_count() - 4
